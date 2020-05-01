@@ -1,6 +1,6 @@
 use sqlparser::parser::Parser;
 
-use forma_lib::{prettify_statement, TemplatedDialect};
+use formation::{prettify_statement, TemplatedDialect};
 
 fn main() {
     let sql = "select * from users where users.id > 100";
