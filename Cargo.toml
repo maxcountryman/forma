@@ -1,13 +1,2 @@
-[package]
-name = "forma"
-version = "0.0.0"
-authors = ["Max Countryman <maxc@me.com>"]
-edition = "2018"
-description = "Magical SQL formatter"
-license = "MIT"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-sqlparser = "0.5.0"
-pretty = "0.10.0"
+[workspace]
+members = ["forma"]

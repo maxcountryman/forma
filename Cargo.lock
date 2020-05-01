@@ -14,6 +14,14 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 
 [[package]]
 name = "forma"
+version = "0.1.0"
+dependencies = [
+ "forma-lib",
+ "sqlparser",
+]
+
+[[package]]
+name = "forma-lib"
 version = "0.0.0"
 dependencies = [
  "pretty",
