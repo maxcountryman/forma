@@ -8,5 +8,4 @@ license = "MIT"
 
 [dependencies]
 formation = { path = "../formation" }
-sqlparser = "0.5.0"
 structopt = "0.3.14"

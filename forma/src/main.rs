@@ -1,12 +1,9 @@
 use std::fs;
-use std::io::{self, Read, Write};
+use std::io::{self, Read};
 use std::path::PathBuf;
-use std::process::exit;
-
-use sqlparser::parser::Parser;
 use structopt::StructOpt;
 
-use formation::{prettify_statement, TemplatedDialect};
+use formation::format;
 
 const DEFAULT_MAX_WIDTH: &str = "100";
 
@@ -26,33 +23,6 @@ struct Opt {
     max_width: usize,
 }
 
-fn format<W: Write>(
-    input_string: String,
-    mut writer: W,
-    check: bool,
-    max_width: usize,
-) -> io::Result<()> {
-    let dialect = TemplatedDialect {};
-    let statements = Parser::parse_sql(&dialect, input_string.clone()).map_err(|_| {
-        io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "Unable to parse given input as SQL",
-        )
-    })?;
-
-    for statement in statements {
-        let pretty = prettify_statement(statement, max_width)?;
-        if check && pretty != input_string {
-            writer.write(input_string.as_bytes())?;
-            exit(1)
-        } else {
-            writer.write(pretty.to_owned().as_bytes())?;
-        }
-    }
-
-    Ok(())
-}
-
 fn main() -> io::Result<()> {
     let Opt {
         input,
@@ -63,12 +33,22 @@ fn main() -> io::Result<()> {
     match input {
         Some(input) => {
             let input_string = fs::read_to_string(&input)?;
-            format(input_string, fs::File::create(input)?, check, max_width)
+            format(
+                input_string,
+                Box::new(move || fs::File::create(input.clone())),
+                check,
+                max_width,
+            )
         }
         None => {
             let mut input_string = String::new();
             io::stdin().lock().read_to_string(&mut input_string)?;
-            format(input_string, io::stdout(), check, max_width)
+            format(
+                input_string,
+                Box::new(|| Ok(io::stdout())),
+                check,
+                max_width,
+            )
         }
     }
 }

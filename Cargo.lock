@@ -58,7 +58,6 @@ name = "forma"
 version = "0.1.0"
 dependencies = [
  "formation",
- "sqlparser",
  "structopt",
 ]
 

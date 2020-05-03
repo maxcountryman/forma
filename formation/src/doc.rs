@@ -206,11 +206,11 @@ fn transform_statement<'a>(statement: Statement) -> RcDoc<'a, ()> {
 /// let dialect = TemplatedDialect {};
 /// let ast = Parser::parse_sql(&dialect, sql.to_string()).unwrap();
 /// assert_eq!(
-///     prettify_statement(ast[0].to_owned(), 100).unwrap(),
+///     render_statement(ast[0].to_owned(), 100).unwrap(),
 ///     "select\n  *\nfrom\n  schema.users\nwhere\n  created_at > {{date}}"
 /// );
 /// ```
-pub fn prettify_statement(statement: Statement, max_width: usize) -> io::Result<String> {
+pub fn render_statement(statement: Statement, max_width: usize) -> io::Result<String> {
     let mut bs = Vec::new();
     transform_statement(statement).render(max_width, &mut bs)?;
     String::from_utf8(bs).map_err(|_| {
