@@ -195,21 +195,6 @@ fn transform_statement<'a>(statement: Statement) -> RcDoc<'a, ()> {
 }
 
 /// Turns normal SQL into delightfully formatted SQL.
-///
-/// # Examples
-///
-/// ```
-/// use formation::dialect::TemplatedDialect;
-/// use formation::doc::prettify_statement;
-/// use sqlparser::parser::Parser;
-/// let sql = "SELECT * FROM schema.users WHERE created_at > {{date}}";
-/// let dialect = TemplatedDialect {};
-/// let ast = Parser::parse_sql(&dialect, sql.to_string()).unwrap();
-/// assert_eq!(
-///     render_statement(ast[0].to_owned(), 100).unwrap(),
-///     "select\n  *\nfrom\n  schema.users\nwhere\n  created_at > {{date}}"
-/// );
-/// ```
 pub fn render_statement(statement: Statement, max_width: usize) -> io::Result<String> {
     let mut bs = Vec::new();
     transform_statement(statement).render(max_width, &mut bs)?;

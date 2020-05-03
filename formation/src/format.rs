@@ -1,4 +1,4 @@
-use std::io::{self, Write};
+use std::io;
 
 use sqlparser::ast::Statement;
 use sqlparser::parser::Parser;
@@ -6,30 +6,33 @@ use sqlparser::parser::Parser;
 use crate::dialect::TemplatedDialect;
 use crate::doc::render_statement;
 
-fn format_statement<W: Write>(
+fn format_statement(
     sql_string: String,
     statement: Statement,
-    writer_callback: &Box<dyn Fn() -> io::Result<W>>,
     check: bool,
     max_width: usize,
-) -> io::Result<usize> {
+) -> io::Result<String> {
     let pretty = render_statement(statement, max_width)?;
     if check && pretty != sql_string {
         Err(io::Error::new(
             io::ErrorKind::Other,
-            "Would format statements",
+            "Would format statement",
         ))
     } else {
-        writer_callback()?.write(pretty.to_owned().as_bytes())
+        Ok(pretty.to_string())
     }
 }
 
-pub fn format<W: Write>(
-    sql_string: String,
-    writer_callback: Box<dyn Fn() -> io::Result<W>>,
-    check: bool,
-    max_width: usize,
-) -> io::Result<()> {
+/// Formats a given SQL string in accordance with the given maximum width.
+///
+/// # Example
+///
+/// ```
+/// use formation::format;
+/// let sql_string = "SELECT * FROM users;".to_owned();
+/// format(sql_string, false, 100);
+/// ```
+pub fn format(sql_string: String, check: bool, max_width: usize) -> io::Result<Vec<String>> {
     let dialect = TemplatedDialect {};
     let statements = Parser::parse_sql(&dialect, sql_string.clone()).map_err(|_| {
         io::Error::new(
@@ -37,15 +40,12 @@ pub fn format<W: Write>(
             "Unable to parse given input as SQL",
         )
     })?;
+    let mut pretty_statements: Vec<String> = vec![];
+
     for statement in statements {
-        format_statement(
-            sql_string.clone(),
-            statement,
-            &writer_callback,
-            check,
-            max_width,
-        )?;
+        let pretty_statement = format_statement(sql_string.clone(), statement, check, max_width)?;
+        pretty_statements.push(pretty_statement);
     }
 
-    Ok(())
+    Ok(pretty_statements)
 }
