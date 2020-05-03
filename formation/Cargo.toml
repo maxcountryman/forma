@@ -3,7 +3,7 @@ name = "formation"
 version = "0.1.0"
 authors = ["Max Countryman <maxc@me.com>"]
 edition = "2018"
-description = "A deflightful SQL formatter."
+description = "An opinionated SQL formatter."
 license = "MIT"
 
 [dependencies]
