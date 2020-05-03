@@ -30,7 +30,10 @@ fn format_statement(
 /// ```
 /// use formation::format;
 /// let sql_string = "SELECT * FROM users;".to_owned();
-/// format(sql_string, false, 100);
+/// assert_eq!(
+///     format(sql_string, false, 100).unwrap(),
+///     vec!["select\n  *\nfrom\n  users".to_owned()]
+/// );
 /// ```
 pub fn format(sql_string: String, check: bool, max_width: usize) -> io::Result<Vec<String>> {
     let dialect = TemplatedDialect {};
