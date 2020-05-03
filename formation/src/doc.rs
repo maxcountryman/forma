@@ -1,7 +1,13 @@
+use crate::TemplatedDialect;
 use pretty::RcDoc;
 use sqlparser::ast::{BinaryOperator, Expr, SelectItem};
 use sqlparser::ast::{Query, Select, SetExpr, Statement};
+use sqlparser::parser::Parser;
 use std::io;
+
+pub enum FormaError {
+    InvalidInput,
+}
 
 /// Returns `true` if the given `BinaryOperator` should create a newline,
 /// otherwise `false`.
@@ -204,4 +210,16 @@ pub fn render_statement(statement: Statement, max_width: usize) -> io::Result<St
             "Unable to decode transformed bytes as UTF8",
         )
     })
+}
+
+/// TODO(bradford): notes
+pub fn prettify(input_string: String, max_width: usize) -> Result<Vec<String>, FormaError> {
+    let dialect = TemplatedDialect {};
+    let statements =
+        Parser::parse_sql(&dialect, input_string.clone()).map_err(|_| FormaError::InvalidInput)?;
+
+    // This works but could panic, is Result<Vec<String>, Vec<FormaError>> annoying?
+    // because we could take the errors out and stack them into a Vec
+    let prettified = statements.into_iter().map(|statement| prettify_statement(statement, max_width).unwrap()).collect();
+    Ok(prettified)
 }
