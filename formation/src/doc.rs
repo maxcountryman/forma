@@ -1,6 +1,6 @@
 use crate::FormaError;
 use pretty::RcDoc;
-use sqlparser::ast::{BinaryOperator, Expr, SelectItem};
+use sqlparser::ast::{BinaryOperator, Cte, Expr, SelectItem};
 use sqlparser::ast::{Query, Select, SetExpr, Statement};
 
 /// Returns `true` if the given `BinaryOperator` should create a newline,
@@ -94,64 +94,132 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
     }
 }
 
+/// Transforms the given `SetExpr` if it's `SetExpr::Select`.
+fn transform_select<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
+    if let SetExpr::Select(box Select {
+        projection,
+        from,
+        selection,
+        distinct,
+        having,
+        group_by,
+    }) = set_expr
+    {
+        let mut doc = RcDoc::text("select")
+            .append(if distinct {
+                RcDoc::space().append(RcDoc::text("disinct"))
+            } else {
+                RcDoc::nil()
+            })
+            .append(RcDoc::line())
+            .append(RcDoc::intersperse(
+                projection
+                    .into_iter()
+                    .map(|select_item| render_select_item(select_item)),
+                RcDoc::text(",").append(RcDoc::line()),
+            ))
+            .nest(2);
+
+        // From.
+        doc = if !from.is_empty() {
+            doc.append(
+                RcDoc::hardline()
+                    .append(RcDoc::text("from").append(RcDoc::line().nest(2)))
+                    .append(
+                        RcDoc::intersperse(
+                            from.into_iter().map(|x| x.to_string()),
+                            RcDoc::text(",").append(RcDoc::line()),
+                        )
+                        .nest(2)
+                        .group(),
+                    ),
+            )
+        } else {
+            doc
+        };
+
+        // Selection.
+        doc = if selection.is_some() {
+            doc.append(
+                RcDoc::line()
+                    .append(RcDoc::text("where").append(RcDoc::line().nest(2)))
+                    .append(transform_expr(selection)),
+            )
+        } else {
+            doc
+        };
+
+        // Group By.
+        doc = if !group_by.is_empty() {
+            doc.append(
+                RcDoc::line()
+                    .append(RcDoc::text("group by").append(RcDoc::line().nest(2)))
+                    .append(
+                        RcDoc::intersperse(
+                            group_by.into_iter().map(|x| x.to_string()),
+                            RcDoc::text(",").append(RcDoc::line()),
+                        )
+                        .nest(2)
+                        .group(),
+                    ),
+            )
+        } else {
+            doc
+        };
+
+        // Having.
+        if having.is_some() {
+            doc.append(
+                RcDoc::line()
+                    .append(RcDoc::text("having").append(RcDoc::line().nest(2)))
+                    .append(transform_expr(having)),
+            )
+        } else {
+            doc
+        }
+    } else {
+        panic!("Improper `SetExpr` variant provided; must be `SetExpr::Select`")
+    }
+}
+
 /// Transforms the given `Query` into an `RcDoc`.
 fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
     let Query {
         body,
         order_by,
         limit,
-        ..
+        ctes,
+        offset: _,
+        fetch: _,
     } = query;
-    // TODO: Match body on type, e.g. Select.
-    let mut doc: RcDoc<'a, ()> = RcDoc::text("select");
+    let mut doc: RcDoc<'a, ()> = if !ctes.is_empty() {
+        RcDoc::text("with")
+            .append(RcDoc::line().append(RcDoc::intersperse(
+                ctes.into_iter().map(|Cte { alias, query }| {
+                    dbg!(&query);
+                    RcDoc::text(alias.to_string())
+                        .append(RcDoc::space())
+                        .append(RcDoc::text("as"))
+                        .append(RcDoc::line())
+                        .append(transform_query(query))
+                }),
+                RcDoc::line(),
+            )))
+            .append(RcDoc::line())
+    } else {
+        RcDoc::nil()
+    };
 
     doc = match body.to_owned() {
-        SetExpr::Select(box Select {
-            projection,
-            from,
-            selection,
-            ..
-        }) => {
-            // Projection.
-            doc = doc
-                .append(RcDoc::line())
-                .append(RcDoc::intersperse(
-                    projection
-                        .into_iter()
-                        .map(|select_item| render_select_item(select_item)),
-                    RcDoc::text(",").append(RcDoc::line()),
-                ))
-                .nest(2);
-
-            // From.
-            doc = if !from.is_empty() {
-                doc.append(
-                    RcDoc::hardline()
-                        .append(RcDoc::text("from").append(RcDoc::line().nest(2)))
-                        .append(
-                            RcDoc::intersperse(
-                                from.into_iter().map(|x| x.to_string()),
-                                RcDoc::text(",").append(RcDoc::line()),
-                            )
-                            .nest(2)
-                            .group(),
-                        ),
-                )
-            } else {
-                doc
-            };
-
-            // Selection.
-            if let Some(selection) = selection {
-                doc.append(
-                    RcDoc::line()
-                        .append(RcDoc::text("where").append(RcDoc::line().nest(2)))
-                        .append(transform_expr(Some(selection))),
-                )
-            } else {
-                doc
-            }
-        }
+        SetExpr::Select(..) => doc.append(transform_select(body)),
+        SetExpr::SetOperation {
+            op,
+            all: _,
+            left,
+            right,
+        } => transform_select(*left)
+            .append(RcDoc::text(op.to_string().to_lowercase()))
+            .append(transform_select(*right)),
         _ => doc,
     };
 
