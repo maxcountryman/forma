@@ -1,13 +1,7 @@
-use crate::TemplatedDialect;
+use crate::FormaError;
 use pretty::RcDoc;
 use sqlparser::ast::{BinaryOperator, Expr, SelectItem};
 use sqlparser::ast::{Query, Select, SetExpr, Statement};
-use sqlparser::parser::Parser;
-use std::io;
-
-pub enum FormaError {
-    InvalidInput,
-}
 
 /// Returns `true` if the given `BinaryOperator` should create a newline,
 /// otherwise `false`.
@@ -201,25 +195,10 @@ fn transform_statement<'a>(statement: Statement) -> RcDoc<'a, ()> {
 }
 
 /// Turns normal SQL into delightfully formatted SQL.
-pub fn render_statement(statement: Statement, max_width: usize) -> io::Result<String> {
+pub fn render_statement(statement: Statement, max_width: usize) -> Result<String, FormaError> {
     let mut bs = Vec::new();
-    transform_statement(statement).render(max_width, &mut bs)?;
-    String::from_utf8(bs).map_err(|_| {
-        io::Error::new(
-            io::ErrorKind::InvalidData,
-            "Unable to decode transformed bytes as UTF8",
-        )
-    })
-}
-
-/// TODO(bradford): notes
-pub fn prettify(input_string: String, max_width: usize) -> Result<Vec<String>, FormaError> {
-    let dialect = TemplatedDialect {};
-    let statements =
-        Parser::parse_sql(&dialect, input_string.clone()).map_err(|_| FormaError::InvalidInput)?;
-
-    // This works but could panic, is Result<Vec<String>, Vec<FormaError>> annoying?
-    // because we could take the errors out and stack them into a Vec
-    let prettified = statements.into_iter().map(|statement| prettify_statement(statement, max_width).unwrap()).collect();
-    Ok(prettified)
+    transform_statement(statement)
+        .render(max_width, &mut bs)
+        .map_err(|op| FormaError::TransformationFailure(op))?;
+    String::from_utf8(bs).map_err(|_| FormaError::Utf8Failure)
 }
