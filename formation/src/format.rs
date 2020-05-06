@@ -1,5 +1,3 @@
-use std::io;
-
 use sqlparser::ast::Statement;
 use sqlparser::parser::Parser;
 
