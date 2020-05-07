@@ -3,6 +3,7 @@ use std::io;
 use std::io::Error;
 
 // where should this live
+#[derive(Debug)]
 pub enum FormaError {
     InvalidInput, // "Unable to parse given input as SQL",
     WouldFormat,  // "Formatting would occur (happens only when check == true)"
