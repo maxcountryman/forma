@@ -1,23 +1,19 @@
-use std::io;
-
 use sqlparser::ast::Statement;
 use sqlparser::parser::Parser;
 
 use crate::dialect::TemplatedDialect;
 use crate::doc::render_statement;
+use crate::FormaError;
 
 fn format_statement(
     sql_string: String,
     statement: Statement,
     check: bool,
     max_width: usize,
-) -> io::Result<String> {
+) -> Result<String, FormaError> {
     let pretty = render_statement(statement, max_width)?;
     if check && pretty != sql_string {
-        Err(io::Error::new(
-            io::ErrorKind::Other,
-            "Would format statement",
-        ))
+        Err(FormaError::WouldFormat)
     } else {
         Ok(pretty.to_string())
     }
@@ -35,14 +31,14 @@ fn format_statement(
 ///     vec!["select\n  *\nfrom\n  users".to_owned()]
 /// );
 /// ```
-pub fn format(sql_string: String, check: bool, max_width: usize) -> io::Result<Vec<String>> {
+pub fn format(
+    sql_string: String,
+    check: bool,
+    max_width: usize,
+) -> Result<Vec<String>, FormaError> {
     let dialect = TemplatedDialect {};
-    let statements = Parser::parse_sql(&dialect, sql_string.clone()).map_err(|_| {
-        io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "Unable to parse given input as SQL",
-        )
-    })?;
+    let statements =
+        Parser::parse_sql(&dialect, sql_string.clone()).map_err(|_| FormaError::InvalidInput)?;
     let mut pretty_statements: Vec<String> = vec![];
 
     for statement in statements {

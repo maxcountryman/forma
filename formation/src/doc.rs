@@ -1,7 +1,7 @@
+use crate::FormaError;
 use pretty::RcDoc;
 use sqlparser::ast::{BinaryOperator, Expr, SelectItem};
 use sqlparser::ast::{Query, Select, SetExpr, Statement};
-use std::io;
 
 /// Returns `true` if the given `BinaryOperator` should create a newline,
 /// otherwise `false`.
@@ -195,13 +195,10 @@ fn transform_statement<'a>(statement: Statement) -> RcDoc<'a, ()> {
 }
 
 /// Turns normal SQL into delightfully formatted SQL.
-pub fn render_statement(statement: Statement, max_width: usize) -> io::Result<String> {
+pub fn render_statement(statement: Statement, max_width: usize) -> Result<String, FormaError> {
     let mut bs = Vec::new();
-    transform_statement(statement).render(max_width, &mut bs)?;
-    String::from_utf8(bs).map_err(|_| {
-        io::Error::new(
-            io::ErrorKind::InvalidData,
-            "Unable to decode transformed bytes as UTF8",
-        )
-    })
+    transform_statement(statement)
+        .render(max_width, &mut bs)
+        .map_err(|op| FormaError::TransformationFailure(op))?;
+    String::from_utf8(bs).map_err(|_| FormaError::Utf8Failure)
 }
