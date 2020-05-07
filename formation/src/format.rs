@@ -1,3 +1,5 @@
+//! The primary formatting interface.
+
 use sqlparser::ast::Statement;
 use sqlparser::parser::Parser;
 
@@ -20,6 +22,14 @@ fn format_statement(
 }
 
 /// Formats a given SQL string in accordance with the given maximum width.
+///
+/// # Errors
+///
+/// Returns a `FormaError::InvalidInput` if the parser cannot parse the
+/// provided input.
+///
+/// If `check` is `true`, will return a `FormaError::WouldFormat` if the
+/// provided input would be formatted.
 ///
 /// # Example
 ///
