@@ -1,7 +1,9 @@
 use crate::FormaError;
 use pretty::RcDoc;
-use sqlparser::ast::{BinaryOperator, Cte, Expr, SelectItem};
-use sqlparser::ast::{Query, Select, SetExpr, Statement};
+use sqlparser::ast::{
+    BinaryOperator, Cte, Expr, Query, Select, SelectItem, SetExpr, Statement, TableFactor,
+    TableWithJoins,
+};
 
 /// Returns `true` if the given `BinaryOperator` should create a newline,
 /// otherwise `false`.
@@ -32,18 +34,24 @@ fn resolve_negation<'a>(expr: String, negated: bool) -> RcDoc<'a, ()> {
 }
 
 /// Resolves a sub-expression, such as `InSquery` or `InLint` to an `RcDoc`.
-fn resolve_sub_expr<'a>(expr_string: String, negated: bool, doc: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
-    resolve_negation(expr_string, negated)
+fn resolve_sub_expr<'a>(expr_string: String, negated: bool, body: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
+    resolve_negation(expr_string, negated).append(transform_sub_expr(body))
+}
+
+/// Transforms an `Expr` that appears as a sub-expression, e.g.
+/// ` ...exists (...)`, to an `RcDoc`.
+fn transform_sub_expr<'a>(body: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
+    RcDoc::nil()
         .append(
             RcDoc::text("(")
                 .append(RcDoc::line_())
-                .append(doc)
+                .append(body)
                 .nest(2)
                 .append(RcDoc::line_())
                 .append(RcDoc::text(")"))
                 .group(),
         )
-        .nest(4)
+        .nest(2)
 }
 
 /// Processes an `Expr` that operates over a list-like structure.
@@ -66,15 +74,17 @@ fn process_in_expr<'a>(expr: Expr) -> RcDoc<'a, ()> {
                 RcDoc::text(",").append(RcDoc::line()),
             ),
         ),
-        _ => RcDoc::nil(),
+        _ => unreachable!("Unhandled `Expr`"),
     }
 }
 
-/// Transforms the given `Expr` into an `RcDoc`.
+/// Transforms the given `Expr` into an `RcDoc`. If `expr` is `None`, returns
+/// a nil `RcDoc`.
 fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
     match expr {
         Some(expr) => match expr {
             Expr::BinaryOp { left, op, right } => transform_expr(Some(*left))
+                // TODO: Rework to avoid trailing spaces.
                 .append(RcDoc::space())
                 .append(if is_newline_op(&op) {
                     RcDoc::hardline()
@@ -87,6 +97,11 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
                 .append(transform_expr(Some(*right))),
             Expr::InSubquery { .. } => process_in_expr(expr),
             Expr::InList { .. } => process_in_expr(expr),
+            Expr::Exists(box query) => RcDoc::text("exists")
+                .append(RcDoc::softline().append(transform_sub_expr(transform_query(query)))),
+            Expr::Subquery(box query) => {
+                RcDoc::softline_().append(transform_sub_expr(transform_query(query)))
+            }
             // TODO: Handle other expression types.
             _ => RcDoc::text(expr.to_string()),
         },
@@ -94,91 +109,143 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
     }
 }
 
-/// Transforms the given `SetExpr` if it's `SetExpr::Select`.
-fn transform_select<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
-    if let SetExpr::Select(box Select {
-        projection,
-        from,
-        selection,
-        distinct,
-        having,
-        group_by,
-    }) = set_expr
-    {
-        let mut doc = RcDoc::text("select")
-            .append(if distinct {
-                RcDoc::space().append(RcDoc::text("disinct"))
+/// Transforms the given `SetExpr` into an `RcDoc`.
+fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
+    match set_expr {
+        SetExpr::Select(box Select {
+            projection,
+            from,
+            selection,
+            distinct,
+            having,
+            group_by,
+        }) => {
+            let mut doc = RcDoc::text("select")
+                .append(if distinct {
+                    RcDoc::space().append(RcDoc::text("disinct"))
+                } else {
+                    RcDoc::nil()
+                })
+                .append(RcDoc::line())
+                .append(RcDoc::intersperse(
+                    projection
+                        .into_iter()
+                        .map(|select_item| render_select_item(select_item)),
+                    RcDoc::text(",").append(RcDoc::line()),
+                ))
+                .nest(2);
+
+            // From.
+            doc = if !from.is_empty() {
+                doc.append(
+                    RcDoc::hardline()
+                        .append(RcDoc::text("from").append(RcDoc::line().nest(2)))
+                        .append(
+                            RcDoc::intersperse(
+                                from.into_iter().map(|table_with_joins| {
+                                    let TableWithJoins { relation, joins } = table_with_joins;
+                                    match relation {
+                                        TableFactor::Table {
+                                            name,
+                                            alias,
+                                            ..
+                                        } => RcDoc::text(name.to_string()).append(
+                                            if let Some(alias) = alias {
+                                                RcDoc::space().append(
+                                                    RcDoc::text("as")
+                                                        .append(RcDoc::space().append(
+                                                            RcDoc::text(alias.to_string()),
+                                                        )),
+                                                )
+                                            } else {
+                                                RcDoc::nil()
+                                            },
+                                        ),
+                                        _ => RcDoc::text(relation.to_string()),
+                                    }
+                                    .append(
+                                        RcDoc::intersperse(
+                                            joins.iter().map(|join| join.to_string()),
+                                            RcDoc::line(),
+                                        ),
+                                    )
+                                }),
+                                RcDoc::text(",").append(RcDoc::line()),
+                            )
+                            .nest(2)
+                            .group(),
+                        ),
+                )
             } else {
-                RcDoc::nil()
-            })
-            .append(RcDoc::line())
-            .append(RcDoc::intersperse(
-                projection
-                    .into_iter()
-                    .map(|select_item| render_select_item(select_item)),
-                RcDoc::text(",").append(RcDoc::line()),
-            ))
-            .nest(2);
+                doc
+            };
 
-        // From.
-        doc = if !from.is_empty() {
-            doc.append(
-                RcDoc::hardline()
-                    .append(RcDoc::text("from").append(RcDoc::line().nest(2)))
-                    .append(
-                        RcDoc::intersperse(
-                            from.into_iter().map(|x| x.to_string()),
-                            RcDoc::text(",").append(RcDoc::line()),
-                        )
-                        .nest(2)
-                        .group(),
-                    ),
-            )
-        } else {
-            doc
-        };
+            // Selection.
+            doc = if selection.is_some() {
+                doc.append(
+                    RcDoc::line()
+                        .append(RcDoc::text("where").append(RcDoc::line().nest(2)))
+                        .append(transform_expr(selection)),
+                )
+            } else {
+                doc
+            };
 
-        // Selection.
-        doc = if selection.is_some() {
-            doc.append(
-                RcDoc::line()
-                    .append(RcDoc::text("where").append(RcDoc::line().nest(2)))
-                    .append(transform_expr(selection)),
-            )
-        } else {
-            doc
-        };
+            // Group By.
+            doc = if !group_by.is_empty() {
+                doc.append(
+                    RcDoc::line()
+                        .append(RcDoc::text("group by").append(RcDoc::line().nest(2)))
+                        .append(
+                            RcDoc::intersperse(
+                                group_by.into_iter().map(|x| x.to_string()),
+                                RcDoc::text(",").append(RcDoc::line()),
+                            )
+                            .nest(2)
+                            .group(),
+                        ),
+                )
+            } else {
+                doc
+            };
 
-        // Group By.
-        doc = if !group_by.is_empty() {
-            doc.append(
-                RcDoc::line()
-                    .append(RcDoc::text("group by").append(RcDoc::line().nest(2)))
-                    .append(
-                        RcDoc::intersperse(
-                            group_by.into_iter().map(|x| x.to_string()),
-                            RcDoc::text(",").append(RcDoc::line()),
-                        )
-                        .nest(2)
-                        .group(),
-                    ),
-            )
-        } else {
-            doc
-        };
-
-        // Having.
-        if having.is_some() {
-            doc.append(
-                RcDoc::line()
-                    .append(RcDoc::text("having").append(RcDoc::line().nest(2)))
-                    .append(transform_expr(having)),
-            )
-        } else {
-            doc
+            // Having.
+            if having.is_some() {
+                doc.append(
+                    RcDoc::line()
+                        .append(RcDoc::text("having").append(RcDoc::line().nest(2)))
+                        .append(transform_expr(having)),
+                )
+            } else {
+                doc
+            }
         }
-    } else {
-        panic!("Improper `SetExpr` variant provided; must be `SetExpr::Select`")
+        SetExpr::SetOperation {
+            op,
+            all,
+            left,
+            right,
+        } => {
+            transform_set_expr(*left)
+                .append(RcDoc::hardline().append(
+                    RcDoc::text(op.to_string().to_lowercase()).append(if all {
+                        RcDoc::space().append(RcDoc::text("all"))
+                    } else {
+                        RcDoc::nil()
+                    }),
+                ))
+                .append(RcDoc::hardline())
+                .append(transform_set_expr(*right))
+        }
+        // Parenthensized query, i.e. order evaluation enforcement.
+        // TODO: Is this generalizable?
+        SetExpr::Query(query) => RcDoc::text("(")
+            .append(RcDoc::line())
+            .append(transform_query(*query))
+            .nest(2)
+            .append(RcDoc::line().append(RcDoc::text(")")))
+            .group(),
+        _ => unreachable!("Unhandled `SetExpr`"),
     }
 }
 
@@ -192,37 +259,41 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
         offset: _,
         fetch: _,
     } = query;
+    // CTEs.
     let mut doc: RcDoc<'a, ()> = if !ctes.is_empty() {
         RcDoc::text("with")
-            .append(RcDoc::line().append(RcDoc::intersperse(
+            .append(RcDoc::space())
+            .append(RcDoc::intersperse(
                 ctes.into_iter().map(|Cte { alias, query }| {
-                    dbg!(&query);
                     RcDoc::text(alias.to_string())
                         .append(RcDoc::space())
-                        .append(RcDoc::text("as"))
-                        .append(RcDoc::line())
-                        .append(transform_query(query))
+                        .append(RcDoc::text("as").append(RcDoc::softline()))
+                        // Parenthensized query.
+                        .append(
+                            RcDoc::text("(")
+                                .append(RcDoc::line_())
+                                .append(transform_query(query))
+                                .nest(2)
+                                .append(RcDoc::line_())
+                                .append(RcDoc::text(")"))
+                                .group(),
+                        )
                 }),
-                RcDoc::line(),
-            )))
-            .append(RcDoc::line())
+                RcDoc::text(",").append(RcDoc::line()),
+            ))
+            .append(RcDoc::line().append(RcDoc::line()))
     } else {
         RcDoc::nil()
     };
 
+    // Query body, e.g. `select * from t1 where x > 1`.
     doc = match body.to_owned() {
-        SetExpr::Select(..) => doc.append(transform_select(body)),
-        SetExpr::SetOperation {
-            op,
-            all: _,
-            left,
-            right,
-        } => transform_select(*left)
-            .append(RcDoc::text(op.to_string().to_lowercase()))
-            .append(transform_select(*right)),
+        SetExpr::Select(..) => doc.append(transform_set_expr(body)),
+        SetExpr::SetOperation { .. } => doc.append(transform_set_expr(body)),
         _ => doc,
     };
 
+    // Order by.
     doc = if !order_by.is_empty() {
         doc.append(
             RcDoc::line()
@@ -240,6 +311,7 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
         doc
     };
 
+    // Limit.
     if let Some(limit) = limit {
         doc.append(
             RcDoc::line()
@@ -258,7 +330,7 @@ fn transform_statement<'a>(statement: Statement) -> RcDoc<'a, ()> {
         // Select statement.
         Statement::Query(query) => transform_query(*query),
         // TODO: Match remaining statement variants.
-        _ => unreachable!(),
+        _ => unreachable!("Unhandled `Statement` variant"),
     }
 }
 
