@@ -5,14 +5,14 @@ use sqlparser::parser::Parser;
 
 use crate::dialect::TemplatedDialect;
 use crate::doc::render_statement;
-use crate::FormaError;
+use crate::error::{self, FormaError};
 
 fn format_statement(
     sql_string: String,
     statement: Statement,
     check: bool,
     max_width: usize,
-) -> Result<String, FormaError> {
+) -> error::Result<String> {
     let pretty = render_statement(statement, max_width)?;
     if check && pretty != sql_string {
         Err(FormaError::WouldFormat)
@@ -41,11 +41,7 @@ fn format_statement(
 ///     vec!["select\n  *\nfrom\n  users".to_owned()]
 /// );
 /// ```
-pub fn format(
-    sql_string: String,
-    check: bool,
-    max_width: usize,
-) -> Result<Vec<String>, FormaError> {
+pub fn format(sql_string: String, check: bool, max_width: usize) -> error::Result<Vec<String>> {
     let dialect = TemplatedDialect {};
     let statements =
         Parser::parse_sql(&dialect, sql_string.clone()).map_err(|_| FormaError::InvalidInput)?;
