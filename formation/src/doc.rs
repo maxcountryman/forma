@@ -1,8 +1,8 @@
 use crate::FormaError;
 use pretty::RcDoc;
 use sqlparser::ast::{
-    BinaryOperator, Cte, Expr, Query, Select, SelectItem, SetExpr, Statement, TableFactor,
-    TableWithJoins,
+    BinaryOperator, Cte, Expr, Join, JoinConstraint, JoinOperator, Query, Select, SelectItem,
+    SetExpr, Statement, TableAlias, TableFactor, TableWithJoins,
 };
 
 /// Returns `true` if the given `BinaryOperator` should create a newline,
@@ -109,6 +109,99 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
     }
 }
 
+fn transform_join<'a>(join: Join) -> RcDoc<'a, ()> {
+    fn prefix<'a>(constraint: &JoinConstraint) -> RcDoc<'a, ()> {
+        RcDoc::text(match constraint {
+            JoinConstraint::Natural => "natural",
+            _ => "",
+        })
+    }
+
+    fn suffix<'a>(constraint: &JoinConstraint) -> RcDoc<'a, ()> {
+        match constraint {
+            JoinConstraint::On(expr) => RcDoc::space().append(
+                RcDoc::text("on").append(RcDoc::space().append(transform_expr(Some(expr.clone())))),
+            ),
+            // TODO:
+            // JoinConstraint::Using(attrs) => &format!(" using ({})", display_comma_separated(attrs)),
+            _ => RcDoc::nil(),
+        }
+    }
+
+    match join.join_operator {
+        JoinOperator::Inner(constraint) => RcDoc::text("join").append(
+            RcDoc::space().append(
+                prefix(&constraint)
+                    .append(transform_relation(join.relation).append(suffix(&constraint))),
+            ),
+        ),
+        JoinOperator::LeftOuter(constraint) => RcDoc::text("left join").append(
+            RcDoc::space().append(
+                prefix(&constraint)
+                    .append(transform_relation(join.relation).append(suffix(&constraint))),
+            ),
+        ),
+        JoinOperator::RightOuter(constraint) => RcDoc::text("right join").append(
+            RcDoc::space().append(
+                prefix(&constraint)
+                    .append(transform_relation(join.relation).append(suffix(&constraint))),
+            ),
+        ),
+        JoinOperator::FullOuter(constraint) => RcDoc::text("full join").append(
+            RcDoc::space().append(
+                prefix(&constraint)
+                    .append(transform_relation(join.relation).append(suffix(&constraint))),
+            ),
+        ),
+        JoinOperator::CrossJoin => RcDoc::text("cross join")
+            .append(RcDoc::space().append(transform_relation(join.relation))),
+        JoinOperator::CrossApply => RcDoc::text("cross apply")
+            .append(RcDoc::space().append(transform_relation(join.relation))),
+        JoinOperator::OuterApply => RcDoc::text("outer apply")
+            .append(RcDoc::space().append(transform_relation(join.relation))),
+    }
+}
+
+fn transform_args<'a>(args: Vec<Expr>) -> RcDoc<'a, ()> {
+    if !args.is_empty() {
+        // TODO: This is a pattern that's largely shared a in few places.
+        RcDoc::text("(")
+            .append(RcDoc::line_())
+            .append(RcDoc::intersperse(
+                args.iter().map(|expr| transform_expr(Some(expr.clone()))),
+                RcDoc::text(",").append(RcDoc::space()),
+            ))
+            .nest(2)
+            .append(RcDoc::line_())
+            .append(RcDoc::text(")"))
+            .group()
+    } else {
+        RcDoc::nil()
+    }
+}
+
+fn transform_alias<'a>(alias: Option<TableAlias>) -> RcDoc<'a, ()> {
+    if let Some(alias) = alias {
+        RcDoc::space()
+            .append(RcDoc::text(alias.to_string()))
+            .append(RcDoc::space().append(RcDoc::text("as")))
+    } else {
+        RcDoc::nil()
+    }
+}
+
+fn transform_relation<'a>(relation: TableFactor) -> RcDoc<'a, ()> {
+    match relation {
+        TableFactor::Table {
+            name, alias, args, ..
+        } => RcDoc::text(name.to_string())
+            .append(transform_args(args))
+            .append(transform_alias(alias)),
+        // TODO: handle other `TableFactor` variants.
+        _ => RcDoc::text(relation.to_string()),
+    }
+}
+
 /// Transforms the given `SetExpr` into an `RcDoc`.
 fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
     match set_expr {
@@ -143,32 +236,15 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
                         .append(
                             RcDoc::intersperse(
                                 from.into_iter().map(|table_with_joins| {
-                                    let TableWithJoins { relation, joins } = table_with_joins;
-                                    match relation {
-                                        TableFactor::Table {
-                                            name,
-                                            alias,
-                                            ..
-                                        } => RcDoc::text(name.to_string()).append(
-                                            if let Some(alias) = alias {
-                                                RcDoc::space().append(
-                                                    RcDoc::text("as")
-                                                        .append(RcDoc::space().append(
-                                                            RcDoc::text(alias.to_string()),
-                                                        )),
-                                                )
-                                            } else {
-                                                RcDoc::nil()
-                                            },
-                                        ),
-                                        _ => RcDoc::text(relation.to_string()),
-                                    }
-                                    .append(
-                                        RcDoc::intersperse(
-                                            joins.iter().map(|join| join.to_string()),
+                                    let TableWithJoins { joins, relation } = table_with_joins;
+                                    transform_relation(relation).append(if !joins.is_empty() {
+                                        RcDoc::hardline().append(RcDoc::intersperse(
+                                            joins.iter().map(|join| transform_join(join.clone())),
                                             RcDoc::line(),
-                                        ),
-                                    )
+                                        ))
+                                    } else {
+                                        RcDoc::nil()
+                                    })
                                 }),
                                 RcDoc::text(",").append(RcDoc::line()),
                             )
@@ -262,12 +338,10 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
     // CTEs.
     let mut doc: RcDoc<'a, ()> = if !ctes.is_empty() {
         RcDoc::text("with")
-            .append(RcDoc::space())
             .append(RcDoc::intersperse(
                 ctes.into_iter().map(|Cte { alias, query }| {
-                    RcDoc::text(alias.to_string())
-                        .append(RcDoc::space())
-                        .append(RcDoc::text("as").append(RcDoc::softline()))
+                    transform_alias(Some(alias))
+                        .append(RcDoc::softline())
                         // Parenthensized query.
                         .append(
                             RcDoc::text("(")
