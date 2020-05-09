@@ -408,11 +408,44 @@ fn transform_statement<'a>(statement: Statement) -> RcDoc<'a, ()> {
     }
 }
 
-/// Turns normal SQL into delightfully formatted SQL.
+/// Renders the `Statement` in accordance with the provided maximum width.
 pub fn render_statement(statement: Statement, max_width: usize) -> error::Result<String> {
     let mut bs = Vec::new();
     transform_statement(statement)
         .render(max_width, &mut bs)
         .map_err(|op| FormaError::TransformationFailure(op))?;
     String::from_utf8(bs).map_err(|_| FormaError::Utf8Failure)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlparser::ast::{Expr, Query, Select, SelectItem, SetExpr, Value};
+
+    const MAX_WIDTH: usize = 100;
+
+    #[test]
+    fn test_render_statement() {
+        let statement = Statement::Query(Box::new(Query {
+            body: SetExpr::Select(Box::new(Select {
+                distinct: false,
+                from: vec![],
+                group_by: vec![],
+                having: None,
+                projection: vec![SelectItem::UnnamedExpr(Expr::Value(Value::Number(
+                    42.to_string(),
+                )))],
+                selection: None,
+            })),
+            ctes: vec![],
+            fetch: None,
+            limit: None,
+            offset: None,
+            order_by: vec![],
+        }));
+        assert_eq!(
+            render_statement(statement, MAX_WIDTH).unwrap(),
+            "select 42".to_owned()
+        );
+    }
 }
