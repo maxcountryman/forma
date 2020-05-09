@@ -1,4 +1,10 @@
-//! The primary formatting interface.
+//! The primary formatting interface
+//!
+//! This module provides a formatting function [`format`] which is intended to be used to format SQL
+//! strings in an opinionated fashion. The function is only configurable in a minimal way by
+//! design.
+//!
+//! [`format`]: ../format/fn.format.html
 
 use sqlparser::ast::Statement;
 use sqlparser::parser::Parser;
@@ -23,13 +29,20 @@ fn format_statement(
 
 /// Formats a given SQL string in accordance with the given maximum width.
 ///
+/// Each statement parsed is formatted separately. The result is a `Vec<String>` where each item
+/// represents a formatted statement of the original `sql_string` input.
+///
+///
+///
 /// # Errors
 ///
-/// Returns a `FormaError::InvalidInput` if the parser cannot parse the
-/// provided input.
+/// Returns a [`FormaError::InvalidInput`] if the parser cannot parse the provided input.
 ///
-/// If `check` is `true`, will return a `FormaError::WouldFormat` if the
-/// provided input would be formatted.
+/// If `check` is `true`, will return a [`FormaError::WouldFormat`] if the provided input would be
+/// formatted.
+///
+/// [`FormaError::InvalidInput`]: ../error/enum.FormaError.html#variant.InvalidInput
+/// [`FormaError::WouldFormat`]: ../error/enum.FormaError.html#variant.WouldFormat
 ///
 /// # Example
 ///

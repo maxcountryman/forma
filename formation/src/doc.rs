@@ -102,6 +102,26 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
             Expr::Subquery(box query) => {
                 RcDoc::softline_().append(transform_sub_expr(transform_query(query)))
             }
+            Expr::Between {
+                expr,
+                negated,
+                low,
+                high,
+            } => transform_expr(Some(*expr))
+                .append(if negated {
+                    RcDoc::text("not")
+                } else {
+                    RcDoc::nil()
+                })
+                .append(
+                    RcDoc::space().append(
+                        RcDoc::text("between")
+                            .append(RcDoc::space())
+                            .append(transform_expr(Some(*low)))
+                            .append(RcDoc::space().append(RcDoc::text("and")).append(RcDoc::space()))
+                            .append(transform_expr(Some(*high))),
+                    ),
+                ),
             // TODO: Handle other expression types.
             _ => RcDoc::text(expr.to_string()),
         },

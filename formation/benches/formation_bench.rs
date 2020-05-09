@@ -4,7 +4,7 @@ use formation::format;
 fn basic_formatting_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("Formation Formatting");
     let string = "SELECT * FROM bob WHERE 1 = 1";
-    group.bench_function("forma::prettify", |b| {
+    group.bench_function("formation::format", |b| {
         b.iter(|| format(string.to_string(), false, 80));
     });
 }

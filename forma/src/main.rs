@@ -1,12 +1,12 @@
 //! An opinionated SQL formatter
 //!
-//! This provides a command line utility for formatting SQL. Input may be
-//! provided as either a file path or stdin. In the case of the file path, the
-//! original file will be reformatted unless the `--check` flag is provided.
-//! Input from stdin will be output to stdout.
+//! This provides a command line utility for formatting SQL. Input may be provided as either a file
+//! path or stdin. In the case of the former, the original file will be re-formatted unless the
+//! `--check` flag is provided. (The `--check` flag will return a non-zero error code if `forma`
+//! would reformat the given input.) Input from stdin will be output to stdout.
 //!
-//! The companion library, [`formation`], is generalized to be usable in other
-//! contexts.
+//! The companion library [`formation`], is generalized to be usable in other contexts, such as
+//! your own programs.
 //!
 //! [`formation`]: ../formation/index.html
 
