@@ -12,11 +12,16 @@ fn is_newline_op(binop: &BinaryOperator) -> bool {
 }
 
 /// Processes a `SelectItem`.
-fn render_select_item(select_item: SelectItem) -> String {
-    if let SelectItem::ExprWithAlias { expr, alias } = select_item {
-        format!("{} as {}", expr, alias)
-    } else {
-        select_item.to_string()
+fn transform_select_item<'a>(select_item: SelectItem) -> RcDoc<'a, ()> {
+    match select_item {
+        SelectItem::ExprWithAlias { expr, alias } => transform_expr(Some(expr))
+            .append(RcDoc::space())
+            .append(RcDoc::text("as"))
+            .append(RcDoc::space())
+            .append(RcDoc::text(alias)),
+        SelectItem::UnnamedExpr(expr) => transform_expr(Some(expr)),
+        SelectItem::QualifiedWildcard(object_name) => RcDoc::text(object_name.to_string()),
+        SelectItem::Wildcard => RcDoc::text("*"),
     }
 }
 
@@ -34,13 +39,13 @@ fn resolve_negation<'a>(expr: String, negated: bool) -> RcDoc<'a, ()> {
 }
 
 /// Resolves a sub-expression, such as `InSquery` or `InLint` to an `RcDoc`.
-fn resolve_sub_expr<'a>(expr_string: String, negated: bool, body: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
+fn resolve_sub_expr(expr_string: String, negated: bool, body: RcDoc<()>) -> RcDoc<()> {
     resolve_negation(expr_string, negated).append(transform_sub_expr(body))
 }
 
 /// Transforms an `Expr` that appears as a sub-expression, e.g.
 /// ` ...exists (...)`, to an `RcDoc`.
-fn transform_sub_expr<'a>(body: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
+fn transform_sub_expr(body: RcDoc<()>) -> RcDoc<()> {
     RcDoc::nil().append(
         RcDoc::text("(")
             .append(RcDoc::line_())
@@ -82,15 +87,13 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
     match expr {
         Some(expr) => match expr {
             Expr::BinaryOp { left, op, right } => transform_expr(Some(*left))
-                // TODO: Rework to avoid trailing spaces.
-                .append(RcDoc::space())
                 .append(if is_newline_op(&op) {
                     RcDoc::hardline()
                         .append(RcDoc::text(op.to_string().to_lowercase()))
                         .append(RcDoc::space())
                         .nest(2)
                 } else {
-                    RcDoc::text(op.to_string()).append(RcDoc::space())
+                    RcDoc::space().append(RcDoc::text(op.to_string()).append(RcDoc::space()))
                 })
                 .append(transform_expr(Some(*right))),
             Expr::InSubquery { .. } => process_in_expr(expr),
@@ -215,7 +218,11 @@ fn transform_alias<'a>(alias: Option<TableAlias>) -> RcDoc<'a, ()> {
 fn transform_relation<'a>(relation: TableFactor) -> RcDoc<'a, ()> {
     match relation {
         TableFactor::Table {
-            name, alias, args, ..
+            name,
+            alias,
+            args,
+            // TODO: `with_hints` support.
+            with_hints: _,
         } => RcDoc::text(name.to_string())
             .append(transform_args(args))
             .append(transform_alias(alias)),
@@ -249,9 +256,7 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
                 })
                 .append(RcDoc::line())
                 .append(RcDoc::intersperse(
-                    projection
-                        .into_iter()
-                        .map(|select_item| render_select_item(select_item)),
+                    projection.into_iter().map(transform_select_item),
                     RcDoc::text(",").append(RcDoc::line()),
                 ))
                 .nest(2);
@@ -389,9 +394,8 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
     };
 
     // Query body, e.g. `select * from t1 where x > 1`.
-    doc = match body.to_owned() {
-        SetExpr::Select(..) => doc.append(transform_set_expr(body)),
-        SetExpr::SetOperation { .. } => doc.append(transform_set_expr(body)),
+    doc = match body {
+        SetExpr::Select(..) | SetExpr::SetOperation { .. } => doc.append(transform_set_expr(body)),
         _ => doc,
     };
 
@@ -402,7 +406,9 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
                 .append(RcDoc::text("order by").append(RcDoc::line().nest(2)))
                 .append(
                     RcDoc::intersperse(
-                        order_by.into_iter().map(|x| x.to_string()),
+                        order_by
+                            .into_iter()
+                            .map(|order_by_expr| order_by_expr.to_string()),
                         RcDoc::text(",").append(RcDoc::line()),
                     )
                     .nest(2)
@@ -441,7 +447,7 @@ pub fn render_statement(statement: Statement, max_width: usize) -> error::Result
     let mut bs = Vec::new();
     transform_statement(statement)
         .render(max_width, &mut bs)
-        .map_err(|op| FormaError::TransformationFailure(op))?;
+        .map_err(FormaError::TransformationFailure)?;
     String::from_utf8(bs).map_err(|_| FormaError::Utf8Failure)
 }
 

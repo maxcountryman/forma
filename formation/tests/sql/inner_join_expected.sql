@@ -10,7 +10,7 @@ from
     from
       category as c, event as e, sales as s
     where
-      c.catid = e.catid 
+      c.catid = e.catid
       and e.eventid = s.eventid
     group by
       catgroup
@@ -22,8 +22,8 @@ from
     from
       category as c, event as e, sales as s, listing as l
     where
-      c.catid = e.catid 
-      and e.eventid = s.eventid 
+      c.catid = e.catid
+      and e.eventid = s.eventid
       and s.listid = l.listid
     group by
       catgroup

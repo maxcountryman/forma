@@ -41,3 +41,12 @@ fn test_between() {
         vec![fs::read_to_string("tests/sql/between_expected.sql").unwrap()]
     );
 }
+
+#[test]
+fn test_subquery() {
+    let sql_string = fs::read_to_string("tests/sql/subquery.sql").unwrap();
+    assert_eq!(
+        formation::format(sql_string, false, MAX_WIDTH).unwrap(),
+        vec![fs::read_to_string("tests/sql/subquery_expected.sql").unwrap()]
+    );
+}
