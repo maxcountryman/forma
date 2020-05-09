@@ -2,6 +2,8 @@ extern crate formation;
 
 use std::fs;
 
+use pretty_assertions::assert_eq;
+
 const MAX_WIDTH: usize = 100;
 
 #[test]
@@ -19,6 +21,15 @@ fn test_outer_join() {
     assert_eq!(
         formation::format(sql_string, false, MAX_WIDTH).unwrap(),
         vec![fs::read_to_string("tests/sql/outer_join_expected.sql").unwrap()]
+    );
+}
+
+#[test]
+fn test_inner_join() {
+    let sql_string = fs::read_to_string("tests/sql/inner_join.sql").unwrap();
+    assert_eq!(
+        formation::format(sql_string, false, MAX_WIDTH).unwrap(),
+        vec![fs::read_to_string("tests/sql/inner_join_expected.sql").unwrap()]
     );
 }
 

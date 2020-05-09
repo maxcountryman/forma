@@ -41,17 +41,15 @@ fn resolve_sub_expr<'a>(expr_string: String, negated: bool, body: RcDoc<'a, ()>)
 /// Transforms an `Expr` that appears as a sub-expression, e.g.
 /// ` ...exists (...)`, to an `RcDoc`.
 fn transform_sub_expr<'a>(body: RcDoc<'a, ()>) -> RcDoc<'a, ()> {
-    RcDoc::nil()
-        .append(
-            RcDoc::text("(")
-                .append(RcDoc::line_())
-                .append(body)
-                .nest(2)
-                .append(RcDoc::line_())
-                .append(RcDoc::text(")"))
-                .group(),
-        )
-        .nest(2)
+    RcDoc::nil().append(
+        RcDoc::text("(")
+            .append(RcDoc::line_())
+            .append(body)
+            .nest(2)
+            .append(RcDoc::line_())
+            .append(RcDoc::text(")"))
+            .group(),
+    )
 }
 
 /// Processes an `Expr` that operates over a list-like structure.
@@ -70,7 +68,7 @@ fn process_in_expr<'a>(expr: Expr) -> RcDoc<'a, ()> {
             expr.to_string(),
             negated,
             RcDoc::intersperse(
-                list.into_iter().map(|x| x.to_string()),
+                list.into_iter().map(|expr| expr.to_string()),
                 RcDoc::text(",").append(RcDoc::line()),
             ),
         ),
@@ -118,7 +116,11 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
                         RcDoc::text("between")
                             .append(RcDoc::space())
                             .append(transform_expr(Some(*low)))
-                            .append(RcDoc::space().append(RcDoc::text("and")).append(RcDoc::space()))
+                            .append(
+                                RcDoc::space()
+                                    .append(RcDoc::text("and"))
+                                    .append(RcDoc::space()),
+                            )
                             .append(transform_expr(Some(*high))),
                     ),
                 ),
@@ -203,8 +205,8 @@ fn transform_args<'a>(args: Vec<Expr>) -> RcDoc<'a, ()> {
 fn transform_alias<'a>(alias: Option<TableAlias>) -> RcDoc<'a, ()> {
     if let Some(alias) = alias {
         RcDoc::space()
+            .append(RcDoc::text("as").append(RcDoc::space()))
             .append(RcDoc::text(alias.to_string()))
-            .append(RcDoc::space().append(RcDoc::text("as")))
     } else {
         RcDoc::nil()
     }
@@ -217,6 +219,12 @@ fn transform_relation<'a>(relation: TableFactor) -> RcDoc<'a, ()> {
         } => RcDoc::text(name.to_string())
             .append(transform_args(args))
             .append(transform_alias(alias)),
+        TableFactor::Derived {
+            lateral,
+            subquery,
+            alias,
+        } => RcDoc::text(if lateral { "lateral " } else { "" })
+            .append(transform_sub_expr(transform_query(*subquery)).append(transform_alias(alias))),
         // TODO: handle other `TableFactor` variants.
         _ => RcDoc::text(relation.to_string()),
     }
@@ -251,9 +259,8 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
             // From.
             doc = if !from.is_empty() {
                 doc.append(
-                    RcDoc::hardline()
-                        .append(RcDoc::text("from").append(RcDoc::line().nest(2)))
-                        .append(
+                    RcDoc::hardline().append(RcDoc::text("from")).append(
+                        RcDoc::line().nest(2).append(
                             RcDoc::intersperse(
                                 from.into_iter().map(|table_with_joins| {
                                     let TableWithJoins { joins, relation } = table_with_joins;
@@ -271,6 +278,7 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
                             .nest(2)
                             .group(),
                         ),
+                    ),
                 )
             } else {
                 doc
