@@ -1,4 +1,4 @@
-use crate::FormaError;
+use crate::error::{self, FormaError};
 use pretty::RcDoc;
 use sqlparser::ast::{
     BinaryOperator, Cte, Expr, Join, JoinConstraint, JoinOperator, Query, Select, SelectItem,
@@ -409,7 +409,7 @@ fn transform_statement<'a>(statement: Statement) -> RcDoc<'a, ()> {
 }
 
 /// Turns normal SQL into delightfully formatted SQL.
-pub fn render_statement(statement: Statement, max_width: usize) -> Result<String, FormaError> {
+pub fn render_statement(statement: Statement, max_width: usize) -> error::Result<String> {
     let mut bs = Vec::new();
     transform_statement(statement)
         .render(max_width, &mut bs)
