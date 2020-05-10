@@ -454,6 +454,7 @@ pub fn render_statement(statement: Statement, max_width: usize) -> error::Result
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
     use sqlparser::ast::{Expr, Query, Select, SelectItem, SetExpr, Value};
 
     const MAX_WIDTH: usize = 100;

@@ -20,4 +20,4 @@ where
 group by
   qtr
 order by
-  qtr
+  qtr;

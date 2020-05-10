@@ -23,7 +23,7 @@ fn format_statement(
     if check && pretty != sql_string {
         Err(FormaError::WouldFormat)
     } else {
-        Ok(pretty.to_string())
+        Ok(pretty)
     }
 }
 
@@ -51,7 +51,7 @@ fn format_statement(
 /// let sql_string = "SELECT * FROM users;".to_owned();
 /// assert_eq!(
 ///     format(sql_string, false, 100).unwrap(),
-///     vec!["select\n  *\nfrom\n  users".to_owned()]
+///     vec!["select\n  *\nfrom\n  users;\n".to_owned()]
 /// );
 /// ```
 pub fn format(sql_string: String, check: bool, max_width: usize) -> error::Result<Vec<String>> {
@@ -62,7 +62,7 @@ pub fn format(sql_string: String, check: bool, max_width: usize) -> error::Resul
 
     for statement in statements {
         let pretty_statement = format_statement(sql_string.clone(), statement, check, max_width)?;
-        pretty_statements.push(pretty_statement);
+        pretty_statements.push(format!("{};\n", pretty_statement));
     }
 
     Ok(pretty_statements)
@@ -71,6 +71,7 @@ pub fn format(sql_string: String, check: bool, max_width: usize) -> error::Resul
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
     use sqlparser::ast::{Expr, Query, Select, SelectItem, SetExpr, Value};
 
     const MAX_WIDTH: usize = 100;
@@ -106,7 +107,7 @@ mod tests {
         let sql_string = "select id from users where created_at > {{date}};".to_owned();
         assert_eq!(
             format(sql_string, false, MAX_WIDTH).unwrap(),
-            vec!["select\n  id\nfrom\n  users\nwhere\n  created_at > {{date}}".to_owned()]
+            vec!["select\n  id\nfrom\n  users\nwhere\n  created_at > {{date}};\n".to_owned()]
         );
     }
 }
