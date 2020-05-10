@@ -3,4 +3,4 @@ select
 from
   users
 where
-  created_at > {{date}}
+  created_at > {{date}};

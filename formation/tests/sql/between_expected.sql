@@ -3,4 +3,4 @@ select
 from
   sales
 where
-  qtysold between 2 and 4
+  qtysold between 2 and 4;

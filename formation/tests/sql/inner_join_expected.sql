@@ -29,4 +29,4 @@ from
       catgroup
   ) as b (catgroup2, unsold) on a.catgroup1 = b.catgroup2
 order by
-  1
+  1;
