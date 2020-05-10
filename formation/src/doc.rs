@@ -1,8 +1,8 @@
 use crate::error::{self, FormaError};
 use pretty::RcDoc;
 use sqlparser::ast::{
-    BinaryOperator, Cte, Expr, Join, JoinConstraint, JoinOperator, Query, Select, SelectItem,
-    SetExpr, Statement, TableAlias, TableFactor, TableWithJoins,
+    BinaryOperator, Cte, Expr, Join, JoinConstraint, JoinOperator, OrderByExpr, Query, Select,
+    SelectItem, SetExpr, Statement, TableAlias, TableFactor, TableWithJoins,
 };
 
 /// Returns `true` if the given `BinaryOperator` should create a newline,
@@ -127,6 +127,43 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
                             .append(transform_expr(Some(*high))),
                     ),
                 ),
+            Expr::Case {
+                operand,
+                conditions,
+                results,
+                else_result,
+            } => RcDoc::text("case")
+                .append(if let Some(operand) = operand {
+                    RcDoc::space().append(transform_expr(Some(*operand)))
+                } else {
+                    RcDoc::nil()
+                })
+                .append(
+                    RcDoc::line().nest(2).append(
+                        RcDoc::intersperse(
+                            conditions.iter().zip(results).map(|(c, r)| {
+                                RcDoc::text("when")
+                                    .append(RcDoc::space())
+                                    .append(transform_expr(Some(c.clone())))
+                                    .append(RcDoc::space())
+                                    .append(RcDoc::text("then"))
+                                    .append(RcDoc::space())
+                                    .append(transform_expr(Some(r)))
+                            }),
+                            RcDoc::line(),
+                        )
+                        .append(if let Some(else_result) = else_result {
+                            RcDoc::line().nest(2).append(
+                                RcDoc::text("else")
+                                    .append(RcDoc::space())
+                                    .append(transform_expr(Some(*else_result))),
+                            )
+                        } else {
+                            RcDoc::nil()
+                        }),
+                    ),
+                )
+                .append(RcDoc::line().append(RcDoc::text("end"))),
             // TODO: Handle other expression types.
             _ => RcDoc::text(expr.to_string()),
         },
@@ -237,6 +274,19 @@ fn transform_relation<'a>(relation: TableFactor) -> RcDoc<'a, ()> {
     }
 }
 
+fn transform_order_by<'a>(order_by_expr: OrderByExpr) -> RcDoc<'a, ()> {
+    let OrderByExpr { expr, asc } = order_by_expr;
+    transform_expr(Some(expr)).append(if let Some(asc) = asc {
+        RcDoc::line().append(if asc {
+            RcDoc::text("asc")
+        } else {
+            RcDoc::text("desc")
+        })
+    } else {
+        RcDoc::nil()
+    })
+}
+
 /// Transforms the given `SetExpr` into an `RcDoc`.
 fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
     match set_expr {
@@ -271,7 +321,7 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
                                     let TableWithJoins { joins, relation } = table_with_joins;
                                     transform_relation(relation).append(if !joins.is_empty() {
                                         RcDoc::hardline().append(RcDoc::intersperse(
-                                            joins.iter().map(|join| transform_join(join.clone())),
+                                            joins.into_iter().map(transform_join),
                                             RcDoc::line(),
                                         ))
                                     } else {
@@ -307,7 +357,7 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
                         .append(RcDoc::text("group by").append(RcDoc::line().nest(2)))
                         .append(
                             RcDoc::intersperse(
-                                group_by.into_iter().map(|x| x.to_string()),
+                                group_by.into_iter().map(|expr| transform_expr(Some(expr))),
                                 RcDoc::text(",").append(RcDoc::line()),
                             )
                             .nest(2)
@@ -406,9 +456,7 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
                 .append(RcDoc::text("order by").append(RcDoc::line().nest(2)))
                 .append(
                     RcDoc::intersperse(
-                        order_by
-                            .into_iter()
-                            .map(|order_by_expr| order_by_expr.to_string()),
+                        order_by.into_iter().map(transform_order_by),
                         RcDoc::text(",").append(RcDoc::line()),
                     )
                     .nest(2)
