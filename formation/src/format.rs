@@ -1,4 +1,10 @@
-//! The primary formatting interface.
+//! The primary formatting interface
+//!
+//! This module provides a formatting function [`format`] which is intended to be used to format SQL
+//! strings in an opinionated fashion. The function is only configurable in a minimal way by
+//! design.
+//!
+//! [`format`]: ../format/fn.format.html
 
 use sqlparser::ast::Statement;
 use sqlparser::parser::Parser;
@@ -23,13 +29,20 @@ fn format_statement(
 
 /// Formats a given SQL string in accordance with the given maximum width.
 ///
+/// Each statement parsed is formatted separately. The result is a `Vec<String>` where each item
+/// represents a formatted statement of the original `sql_string` input.
+///
+///
+///
 /// # Errors
 ///
-/// Returns a `FormaError::InvalidInput` if the parser cannot parse the
-/// provided input.
+/// Returns a [`FormaError::InvalidInput`] if the parser cannot parse the provided input.
 ///
-/// If `check` is `true`, will return a `FormaError::WouldFormat` if the
-/// provided input would be formatted.
+/// If `check` is `true`, will return a [`FormaError::WouldFormat`] if the provided input would be
+/// formatted.
+///
+/// [`FormaError::InvalidInput`]: ../error/enum.FormaError.html#variant.InvalidInput
+/// [`FormaError::WouldFormat`]: ../error/enum.FormaError.html#variant.WouldFormat
 ///
 /// # Example
 ///
@@ -53,4 +66,47 @@ pub fn format(sql_string: String, check: bool, max_width: usize) -> error::Resul
     }
 
     Ok(pretty_statements)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlparser::ast::{Expr, Query, Select, SelectItem, SetExpr, Value};
+
+    const MAX_WIDTH: usize = 100;
+
+    #[test]
+    fn test_format_statement() {
+        let sql_string = "SELECT 42;".to_owned();
+        let statement = Statement::Query(Box::new(Query {
+            body: SetExpr::Select(Box::new(Select {
+                distinct: false,
+                from: vec![],
+                group_by: vec![],
+                having: None,
+                projection: vec![SelectItem::UnnamedExpr(Expr::Value(Value::Number(
+                    42.to_string(),
+                )))],
+                selection: None,
+            })),
+            ctes: vec![],
+            fetch: None,
+            limit: None,
+            offset: None,
+            order_by: vec![],
+        }));
+        assert_eq!(
+            format_statement(sql_string, statement, false, MAX_WIDTH).unwrap(),
+            "select 42".to_owned()
+        );
+    }
+
+    #[test]
+    fn test_format() {
+        let sql_string = "select id from users where created_at > {{date}};".to_owned();
+        assert_eq!(
+            format(sql_string, false, MAX_WIDTH).unwrap(),
+            vec!["select\n  id\nfrom\n  users\nwhere\n  created_at > {{date}}".to_owned()]
+        );
+    }
 }

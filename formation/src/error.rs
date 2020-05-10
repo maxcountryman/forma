@@ -1,8 +1,9 @@
 //! Error module
 //!
-//! Provides an error enum.
+//! Provides a custom error enum representing different errors the formatter can encounter.
 use std::io;
 
+/// An alias for a `std::result::Result` that pins `FormaError`.
 pub type Result<T> = std::result::Result<T, FormaError>;
 
 /// Forma error type.
@@ -14,7 +15,7 @@ pub enum FormaError {
     WouldFormat,
     /// A transformation failure that wraps `io::Error`.
     TransformationFailure(io::Error),
-    /// A UTF8 failure.
+    /// A UTF-8 failure.
     Utf8Failure,
 }
 

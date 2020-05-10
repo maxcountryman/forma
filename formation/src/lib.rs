@@ -1,15 +1,14 @@
 //! An opinionated SQL formatter
 //!
-//! This provides a library which exposes a function [`format`], for
-//! formatting SQL. See the companion binary [`forma`], for a command line
-//! utility that utilitizes this library.
+//! This provides a library which exposes a function [`format`], for formatting SQL. See the
+//! companion binary [`forma`], for a command-line utility that consumes this library.
 //!
-//! The style of formatting is intended to be opinionated and so generally not
-//! configurable with the exception of the maximum width.
+//! The style of formatting is intended to be opinionated and so generally not configurable. The
+//! primary exception is the ability to set a maximum width which the formatter will attempt to
+//! adhere the output to.
 //!
-//! Currently `formation` uses a generic SQL dialect that understands
-//! templated strings in the form of `{{...}}`. Configurable dialects may be
-//! added in the future.
+//! Currently `formation` uses a generic SQL dialect that understands templated strings in the form
+//! of `{{ .. }}`. Configurable dialects may be added in the future.
 //!
 //! [`format`]: format/fn.format.html
 //! [`forma`]: ../forma/index.html
@@ -19,7 +18,7 @@
 
 mod dialect;
 mod doc;
-mod error;
+pub mod error;
 pub mod format;
 
 pub use crate::format::format;
