@@ -91,7 +91,6 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
                     RcDoc::hardline()
                         .append(RcDoc::text(op.to_string().to_lowercase()))
                         .append(RcDoc::space())
-                        .nest(2)
                 } else {
                     RcDoc::space().append(RcDoc::text(op.to_string()).append(RcDoc::space()))
                 })
@@ -344,7 +343,7 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
                 doc.append(
                     RcDoc::line()
                         .append(RcDoc::text("where").append(RcDoc::line().nest(2)))
-                        .append(transform_expr(selection)),
+                        .append(transform_expr(selection).nest(2)),
                 )
             } else {
                 doc
