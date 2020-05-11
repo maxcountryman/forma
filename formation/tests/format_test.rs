@@ -52,10 +52,28 @@ fn test_subquery() {
 }
 
 #[test]
+fn test_correlated_subquery() {
+    let sql_string = fs::read_to_string("tests/sql/correlated_subquery.sql").unwrap();
+    assert_eq!(
+        formation::format(sql_string, false, MAX_WIDTH).unwrap(),
+        vec![fs::read_to_string("tests/sql/correlated_subquery_expected.sql").unwrap()]
+    );
+}
+
+#[test]
 fn test_case() {
     let sql_string = fs::read_to_string("tests/sql/case.sql").unwrap();
     assert_eq!(
         formation::format(sql_string, false, MAX_WIDTH).unwrap(),
         vec![fs::read_to_string("tests/sql/case_expected.sql").unwrap()]
+    );
+}
+
+#[test]
+fn test_evaluation_order() {
+    let sql_string = fs::read_to_string("tests/sql/evaluation_order.sql").unwrap();
+    assert_eq!(
+        formation::format(sql_string, false, MAX_WIDTH).unwrap(),
+        vec![fs::read_to_string("tests/sql/evaluation_order_expected.sql").unwrap()]
     );
 }
