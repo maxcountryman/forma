@@ -1,8 +1,8 @@
 use crate::error::{self, FormaError};
 use pretty::RcDoc;
 use sqlparser::ast::{
-    BinaryOperator, Cte, Expr, Join, JoinConstraint, JoinOperator, OrderByExpr, Query, Select,
-    SelectItem, SetExpr, Statement, TableAlias, TableFactor, TableWithJoins,
+    BinaryOperator, Cte, Expr, Function, Join, JoinConstraint, JoinOperator, OrderByExpr, Query,
+    Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, TableWithJoins,
 };
 
 /// Returns `true` if the given `BinaryOperator` should create a newline,
@@ -163,6 +163,25 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
                     ),
                 )
                 .append(RcDoc::line().append(RcDoc::text("end"))),
+            Expr::Function(Function {
+                name,
+                args,
+                over,
+                distinct,
+            }) => RcDoc::text(name.to_string().to_lowercase()).append(
+                RcDoc::text("(")
+                    .append(RcDoc::line_())
+                    .append(
+                        RcDoc::intersperse(
+                            args.into_iter().map(|expr| transform_expr(Some(expr))),
+                            RcDoc::text(",").append(RcDoc::line()),
+                        )
+                        .group(),
+                    )
+                    .nest(2)
+                    .append(RcDoc::line_())
+                    .append(RcDoc::text(")")),
+            ),
             // TODO: Handle other expression types.
             _ => RcDoc::text(expr.to_string()),
         },
@@ -422,7 +441,9 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
         RcDoc::text("with")
             .append(RcDoc::intersperse(
                 ctes.into_iter().map(|Cte { alias, query }| {
-                    transform_alias(Some(alias))
+                    RcDoc::space()
+                        // Special-case CTEs alias handling.
+                        .append(RcDoc::text(format!("{} as", alias.to_string())))
                         .append(RcDoc::softline())
                         // Parenthensized query.
                         .append(
