@@ -1,0 +1,31 @@
+name: ci
+
+on: [push]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v2
+
+      - name: Set up Rust
+        uses: hecrj/setup-rust-action@v1
+        with:
+          components: rustfmt, clippy
+          rust-version: nightly
+
+      - name: Cargo fmt
+        run: cargo fmt --all -- --check
+
+      - name: Cargo clippy
+        run: cargo clippy --all-targets -- -D clippy::all
+
+      - name: Cargo check
+        run: cargo check --all
+
+      - name: Cargo test
+        run: cargo test
