@@ -86,3 +86,12 @@ fn test_window_function() {
         vec![fs::read_to_string("tests/sql/window_function_expected.sql").unwrap()]
     );
 }
+
+#[test]
+fn test_null() {
+    let sql_string = fs::read_to_string("tests/sql/null.sql").unwrap();
+    assert_eq!(
+        formation::format(sql_string, false, MAX_WIDTH).unwrap(),
+        vec![fs::read_to_string("tests/sql/null_expected.sql").unwrap()]
+    );
+}
