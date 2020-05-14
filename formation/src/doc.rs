@@ -164,6 +164,12 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
                     ),
                 )
                 .append(RcDoc::line().append(RcDoc::text("end"))),
+            Expr::IsNull(expr) => transform_expr(Some(*expr))
+                .append(RcDoc::space())
+                .append(RcDoc::text("is null")),
+            Expr::IsNotNull(expr) => transform_expr(Some(*expr))
+                .append(RcDoc::space())
+                .append(RcDoc::text("is not null")),
             Expr::Function(Function {
                 name,
                 args,
