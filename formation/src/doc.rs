@@ -1,8 +1,9 @@
 use crate::error::{self, FormaError};
 use pretty::RcDoc;
 use sqlparser::ast::{
-    BinaryOperator, Cte, Expr, Join, JoinConstraint, JoinOperator, OrderByExpr, Query, Select,
-    SelectItem, SetExpr, Statement, TableAlias, TableFactor, TableWithJoins,
+    BinaryOperator, Cte, Expr, Function, Join, JoinConstraint, JoinOperator, OrderByExpr, Query,
+    Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, TableWithJoins, WindowFrame,
+    WindowSpec,
 };
 
 /// Returns `true` if the given `BinaryOperator` should create a newline,
@@ -163,6 +164,127 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
                     ),
                 )
                 .append(RcDoc::line().append(RcDoc::text("end"))),
+            Expr::Function(Function {
+                name,
+                args,
+                over,
+                distinct,
+            }) => RcDoc::text(name.to_string().to_lowercase())
+                .append(
+                    RcDoc::text("(")
+                        .append(RcDoc::line_())
+                        .append(if distinct {
+                            RcDoc::text("distinct").append(RcDoc::space())
+                        } else {
+                            RcDoc::nil()
+                        })
+                        .append(RcDoc::intersperse(
+                            args.into_iter().map(|expr| transform_expr(Some(expr))),
+                            RcDoc::text(",").append(RcDoc::line()),
+                        ))
+                        .nest(2)
+                        .append(RcDoc::line_())
+                        .append(RcDoc::text(")"))
+                        .group(),
+                )
+                .append(
+                    if let Some(WindowSpec {
+                        partition_by,
+                        order_by,
+                        window_frame,
+                    }) = over
+                    {
+                        RcDoc::space().append(
+                            RcDoc::text("over").append(
+                                RcDoc::text("(")
+                                    .append(RcDoc::line_())
+                                    .append(
+                                        if !partition_by.is_empty() {
+                                            RcDoc::text("partition by")
+                                                .append(RcDoc::space())
+                                                .append(RcDoc::intersperse(
+                                                    partition_by
+                                                        .into_iter()
+                                                        .map(|expr| transform_expr(Some(expr))),
+                                                    RcDoc::text(",").append(RcDoc::line()),
+                                                ))
+                                                .append(RcDoc::space())
+                                        } else {
+                                            RcDoc::nil()
+                                        }
+                                        .append(if !order_by.is_empty() {
+                                            RcDoc::line_().append(
+                                                RcDoc::text("order by")
+                                                    .append(RcDoc::space())
+                                                    .append(RcDoc::intersperse(
+                                                        order_by.into_iter().map(
+                                                            |OrderByExpr { expr, asc }| {
+                                                                transform_expr(Some(expr)).append(
+                                                                    if let Some(asc) = asc {
+                                                                        RcDoc::space().append(
+                                                                            if asc {
+                                                                                RcDoc::text("asc")
+                                                                            } else {
+                                                                                RcDoc::text("desc")
+                                                                            },
+                                                                        )
+                                                                    } else {
+                                                                        RcDoc::nil()
+                                                                    },
+                                                                )
+                                                            },
+                                                        ),
+                                                        RcDoc::text(",").append(RcDoc::line()),
+                                                    )),
+                                            )
+                                        } else {
+                                            RcDoc::nil()
+                                        })
+                                        .append(
+                                            if let Some(WindowFrame {
+                                                units,
+                                                start_bound,
+                                                end_bound,
+                                            }) = window_frame
+                                            {
+                                                RcDoc::line_().append(
+                                                    RcDoc::text(units.to_string().to_lowercase())
+                                                        .append(RcDoc::space())
+                                                        .append(RcDoc::text("between"))
+                                                        .append(RcDoc::space())
+                                                        .append(
+                                                            start_bound.to_string().to_lowercase(),
+                                                        )
+                                                        .append(
+                                                            if let Some(end_bound) = end_bound {
+                                                                RcDoc::space()
+                                                                    .append(RcDoc::text("and"))
+                                                                    .append(RcDoc::space())
+                                                                    .append(RcDoc::text(
+                                                                        end_bound
+                                                                            .to_string()
+                                                                            .to_lowercase(),
+                                                                    ))
+                                                            } else {
+                                                                RcDoc::nil()
+                                                            },
+                                                        ),
+                                                )
+                                            } else {
+                                                RcDoc::nil()
+                                            },
+                                        ),
+                                    )
+                                    .nest(2)
+                                    .append(RcDoc::line_())
+                                    .append(RcDoc::text(")"))
+                                    .group(),
+                            ),
+                        )
+                    } else {
+                        RcDoc::nil()
+                    },
+                ),
             // TODO: Handle other expression types.
             _ => RcDoc::text(expr.to_string()),
         },
@@ -422,7 +544,9 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
         RcDoc::text("with")
             .append(RcDoc::intersperse(
                 ctes.into_iter().map(|Cte { alias, query }| {
-                    transform_alias(Some(alias))
+                    RcDoc::space()
+                        // Special-case CTEs alias handling.
+                        .append(RcDoc::text(format!("{} as", alias.to_string())))
                         .append(RcDoc::softline())
                         // Parenthensized query.
                         .append(
