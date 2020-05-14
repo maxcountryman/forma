@@ -77,3 +77,12 @@ fn test_evaluation_order() {
         vec![fs::read_to_string("tests/sql/evaluation_order_expected.sql").unwrap()]
     );
 }
+
+#[test]
+fn test_window_function() {
+    let sql_string = fs::read_to_string("tests/sql/window_function.sql").unwrap();
+    assert_eq!(
+        formation::format(sql_string, false, MAX_WIDTH).unwrap(),
+        vec![fs::read_to_string("tests/sql/window_function_expected.sql").unwrap()]
+    );
+}
