@@ -87,17 +87,58 @@ fn process_in_expr<'a>(expr: Expr) -> RcDoc<'a, ()> {
 fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
     match expr {
         Some(expr) => match expr {
-            Expr::BinaryOp { left, op, right } => transform_expr(Some(*left))
-                .append(if is_newline_op(&op) {
-                    RcDoc::hardline()
-                        .append(RcDoc::text(op.to_string().to_lowercase()))
+            Expr::Identifier(ident) => RcDoc::text(ident),
+            Expr::Wildcard => RcDoc::text("*"),
+            Expr::QualifiedWildcard(qualifiers) => {
+                RcDoc::intersperse(qualifiers, RcDoc::text(".")).append(RcDoc::text(".*"))
+            }
+            Expr::CompoundIdentifier(idents) => RcDoc::intersperse(idents, RcDoc::text(".")),
+            Expr::BinaryOp { left, op, right } => {
+                let op_string = op.to_string().to_lowercase();
+                transform_expr(Some(*left))
+                    .append(if is_newline_op(&op) {
+                        RcDoc::hardline()
+                            .append(RcDoc::text(op_string))
+                            .append(RcDoc::space())
+                    } else {
+                        RcDoc::space().append(RcDoc::text(op_string).append(RcDoc::space()))
+                    })
+                    .append(transform_expr(Some(*right)))
+            }
+            Expr::UnaryOp { expr, op } => RcDoc::text(op.to_string().to_lowercase())
+                .append(RcDoc::space())
+                .append(transform_expr(Some(*expr))),
+            Expr::Cast { expr, data_type } => RcDoc::text("cast(")
+                .append(
+                    transform_expr(Some(*expr))
                         .append(RcDoc::space())
-                } else {
-                    RcDoc::space().append(RcDoc::text(op.to_string()).append(RcDoc::space()))
-                })
-                .append(transform_expr(Some(*right))),
-            Expr::InSubquery { .. } => process_in_expr(expr),
-            Expr::InList { .. } => process_in_expr(expr),
+                        .append(RcDoc::text("as"))
+                        .append(RcDoc::text(data_type.to_string().to_lowercase())),
+                )
+                .append(RcDoc::text(")")),
+            Expr::Extract { field, expr } => RcDoc::text("extract(")
+                .append(
+                    RcDoc::text(field.to_string())
+                        .append(RcDoc::space())
+                        .append(RcDoc::text("from"))
+                        .append(RcDoc::space())
+                        .append(transform_expr(Some(*expr))),
+                )
+                .append(RcDoc::text(")")),
+            Expr::Collate { expr, collation } => transform_expr(Some(*expr))
+                .append(RcDoc::space())
+                .append(RcDoc::text("collate"))
+                .append(RcDoc::space())
+                .append(RcDoc::text(collation.to_string())),
+            Expr::Nested(expr) => RcDoc::text("(")
+                .append(RcDoc::softline_())
+                .append(transform_expr(Some(*expr)).group())
+                .nest(2)
+                .append(RcDoc::softline_())
+                .append(RcDoc::text(")")),
+            Expr::Value(value) => RcDoc::text(value.to_string()),
+            // TODO: We shouldn't need `process_in_expr`.
+            Expr::InSubquery { .. } | Expr::InList { .. } => process_in_expr(expr),
             Expr::Exists(box query) => RcDoc::text("exists")
                 .append(RcDoc::softline().append(transform_sub_expr(transform_query(query)))),
             Expr::Subquery(box query) => {
@@ -291,8 +332,6 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
                         RcDoc::nil()
                     },
                 ),
-            // TODO: Handle other expression types.
-            _ => RcDoc::text(expr.to_string()),
         },
         None => RcDoc::nil(),
     }
