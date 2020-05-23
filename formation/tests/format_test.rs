@@ -95,3 +95,12 @@ fn test_null() {
         vec![fs::read_to_string("tests/sql/null_expected.sql").unwrap()]
     );
 }
+
+#[test]
+fn test_group_by() {
+    let sql_string = fs::read_to_string("tests/sql/group_by.sql").unwrap();
+    assert_eq!(
+        formation::format(sql_string, false, MAX_WIDTH).unwrap(),
+        vec![fs::read_to_string("tests/sql/group_by_expected.sql").unwrap()]
+    );
+}
