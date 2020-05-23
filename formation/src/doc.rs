@@ -47,15 +47,13 @@ fn resolve_sub_expr(expr_string: String, negated: bool, body: RcDoc<()>) -> RcDo
 /// Transforms an `Expr` that appears as a sub-expression, e.g.
 /// ` ...exists (...)`, to an `RcDoc`.
 fn transform_sub_expr(body: RcDoc<()>) -> RcDoc<()> {
-    RcDoc::nil().append(
-        RcDoc::text("(")
-            .append(RcDoc::line_())
-            .append(body)
-            .nest(2)
-            .append(RcDoc::line_())
-            .append(RcDoc::text(")"))
-            .group(),
-    )
+    RcDoc::text("(")
+        .append(RcDoc::line_())
+        .append(body)
+        .nest(2)
+        .append(RcDoc::line_())
+        .append(RcDoc::text(")"))
+        .group()
 }
 
 /// Processes an `Expr` that operates over a list-like structure.
@@ -108,7 +106,8 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
             Expr::UnaryOp { expr, op } => RcDoc::text(op.to_string().to_lowercase())
                 .append(RcDoc::space())
                 .append(transform_expr(Some(*expr))),
-            Expr::Cast { expr, data_type } => RcDoc::text("cast(")
+            Expr::Cast { expr, data_type } => RcDoc::text("cast")
+                .append(RcDoc::text("("))
                 .append(
                     transform_expr(Some(*expr))
                         .append(RcDoc::space())
@@ -116,7 +115,8 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
                         .append(RcDoc::text(data_type.to_string().to_lowercase())),
                 )
                 .append(RcDoc::text(")")),
-            Expr::Extract { field, expr } => RcDoc::text("extract(")
+            Expr::Extract { field, expr } => RcDoc::text("extract")
+                .append(RcDoc::text("("))
                 .append(
                     RcDoc::text(field.to_string())
                         .append(RcDoc::space())
@@ -390,13 +390,13 @@ fn transform_join<'a>(join: Join) -> RcDoc<'a, ()> {
     }
 }
 
-fn transform_args<'a>(args: Vec<Expr>) -> RcDoc<'a, ()> {
-    if !args.is_empty() {
+fn transform_comma_separated_exprs<'a>(exprs: Vec<Expr>) -> RcDoc<'a, ()> {
+    if !exprs.is_empty() {
         // TODO: This is a pattern that's largely shared a in few places.
         RcDoc::text("(")
             .append(RcDoc::line_())
             .append(RcDoc::intersperse(
-                args.iter().map(|expr| transform_expr(Some(expr.clone()))),
+                exprs.iter().map(|expr| transform_expr(Some(expr.clone()))),
                 RcDoc::text(",").append(RcDoc::space()),
             ))
             .nest(2)
@@ -427,7 +427,7 @@ fn transform_relation<'a>(relation: TableFactor) -> RcDoc<'a, ()> {
             // TODO: `with_hints` support.
             with_hints: _,
         } => RcDoc::text(name.to_string())
-            .append(transform_args(args))
+            .append(transform_comma_separated_exprs(args))
             .append(transform_alias(alias)),
         TableFactor::Derived {
             lateral,
