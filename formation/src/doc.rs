@@ -167,14 +167,14 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
                 .append(
                     RcDoc::line().nest(2).append(
                         RcDoc::intersperse(
-                            conditions.iter().zip(results).map(|(c, r)| {
+                            conditions.iter().zip(results).map(|(condition, result)| {
                                 RcDoc::text("when")
                                     .append(RcDoc::space())
-                                    .append(transform_expr(Some(c.clone())))
+                                    .append(transform_expr(Some(condition.clone())))
                                     .append(RcDoc::space())
                                     .append(RcDoc::text("then"))
                                     .append(RcDoc::space())
-                                    .append(transform_expr(Some(r)))
+                                    .append(transform_expr(Some(result)))
                             }),
                             RcDoc::line(),
                         )
