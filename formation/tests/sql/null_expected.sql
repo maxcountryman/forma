@@ -1,6 +1,1 @@
-select
-  count(*)
-from
-  sales
-where
-  qtysold is null;
+select count(*) from sales where qtysold is null;

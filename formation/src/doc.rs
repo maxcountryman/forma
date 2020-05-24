@@ -427,7 +427,7 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
                 .nest(2)
                 // From.
                 .append(if !from.is_empty() {
-                    RcDoc::hardline().append(RcDoc::text("from")).append(
+                    RcDoc::line().append(RcDoc::text("from")).append(
                         RcDoc::line().nest(2).append(
                             comma_separated(from.into_iter().map(|table_with_joins| {
                                 let TableWithJoins { joins, relation } = table_with_joins;
@@ -469,16 +469,14 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
                 } else {
                     RcDoc::nil()
                 })
-
-            // Having.
-            .append(if having.is_some() {
+                // Having.
+                .append(if having.is_some() {
                     RcDoc::line()
                         .append(RcDoc::text("having").append(RcDoc::line().nest(2)))
                         .append(transform_expr(having))
-                
-            } else {
-                RcDoc::nil()
-            })
+                } else {
+                    RcDoc::nil()
+                })
         }
 
         SetExpr::SetOperation {
@@ -486,18 +484,16 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
             all,
             left,
             right,
-        } => {
-            transform_set_expr(*left)
-                .append(RcDoc::hardline().append(
-                    RcDoc::text(op.to_string().to_lowercase()).append(if all {
-                        RcDoc::space().append(RcDoc::text("all"))
-                    } else {
-                        RcDoc::nil()
-                    }),
-                ))
-                .append(RcDoc::hardline())
-                .append(transform_set_expr(*right))
-        }
+        } => transform_set_expr(*left)
+            .append(
+                RcDoc::line().append(RcDoc::text(op.to_string().to_lowercase()).append(if all {
+                    RcDoc::space().append(RcDoc::text("all"))
+                } else {
+                    RcDoc::nil()
+                })),
+            )
+            .append(RcDoc::line())
+            .append(transform_set_expr(*right)),
 
         // Parenthensized query, i.e. order evaluation enforcement.
         SetExpr::Query(query) => parenthenized(transform_query(*query)),
@@ -550,12 +546,9 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
         RcDoc::line()
             .append(RcDoc::text("order by").append(RcDoc::line().nest(2)))
             .append(
-                RcDoc::intersperse(
-                    order_by.into_iter().map(transform_order_by),
-                    RcDoc::text(",").append(RcDoc::line()),
-                )
-                .nest(2)
-                .group(),
+                comma_separated(order_by.into_iter().map(transform_order_by))
+                    .nest(2)
+                    .group()
             )
     } else {
         RcDoc::nil()

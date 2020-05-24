@@ -11,14 +11,7 @@ with venue_sales as (
     group by
       venuename, venuecity
   ),
-  top_venues as (
-    select
-      venuename
-    from
-      venue_sales
-    where
-      venuename_sales > 800000
-  )
+  top_venues as (select venuename from venue_sales where venuename_sales > 800000)
 
 select
   venuename,
@@ -31,12 +24,7 @@ from
 where
   venue.venueid = event.venueid
   and event.eventid = sales.eventid
-  and venuename in (
-    select
-      venuename
-    from
-      top_venues
-  )
+  and venuename in (select venuename from top_venues)
 group by
   venuename, venuecity, venuestate
 order by
