@@ -112,7 +112,6 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
                 .append(RcDoc::softline_())
                 .append(RcDoc::text(")")),
             Expr::Value(value) => RcDoc::text(value.to_string()),
-            // TODO: We shouldn't need `process_in_expr`.
             Expr::InSubquery {
                 expr,
                 negated,
