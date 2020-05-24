@@ -512,8 +512,16 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
         // Parenthensized query, i.e. order evaluation enforcement.
         SetExpr::Query(query) => parenthenized(transform_query(*query)),
 
-        // TODO: Handle all `SetExpr` variants.
-        _ => unreachable!("Unhandled `SetExpr`"),
+        // Values, such as insert values for the given expression.
+        SetExpr::Values(values) => {
+            RcDoc::text("values")
+                .append(RcDoc::space())
+                .append(RcDoc::concat(values.0.into_iter().map(|row| {
+                    parenthenized(comma_separated(
+                        row.into_iter().map(|expr| transform_expr(Some(expr))),
+                    ))
+                })))
+        }
     }
 }
 
@@ -542,13 +550,9 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
             .append(RcDoc::line().append(RcDoc::line()))
     } else {
         RcDoc::nil()
-    };
-
+    }
     // Query body, e.g. `select * from t1 where x > 1`.
-    doc = match body {
-        SetExpr::Select(..) | SetExpr::SetOperation { .. } => doc.append(transform_set_expr(body)),
-        _ => doc,
-    };
+    .append(transform_set_expr(body));
 
     // Order by.
     doc = if !order_by.is_empty() {
