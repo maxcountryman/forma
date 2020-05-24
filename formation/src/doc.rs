@@ -532,11 +532,12 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
         order_by,
         limit,
         ctes,
+        // TODO: offset, fetch
         offset: _,
         fetch: _,
     } = query;
     // CTEs.
-    let mut doc: RcDoc<'a, ()> = if !ctes.is_empty() {
+    if !ctes.is_empty() {
         RcDoc::text("with")
             .append(comma_separated(ctes.into_iter().map(
                 |Cte { alias, query }| {
@@ -552,36 +553,30 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
         RcDoc::nil()
     }
     // Query body, e.g. `select * from t1 where x > 1`.
-    .append(transform_set_expr(body));
-
+    .append(transform_set_expr(body))
     // Order by.
-    doc = if !order_by.is_empty() {
-        doc.append(
-            RcDoc::line()
-                .append(RcDoc::text("order by").append(RcDoc::line().nest(2)))
-                .append(
-                    RcDoc::intersperse(
-                        order_by.into_iter().map(transform_order_by),
-                        RcDoc::text(",").append(RcDoc::line()),
-                    )
-                    .nest(2)
-                    .group(),
-                ),
-        )
+    .append(if !order_by.is_empty() {
+        RcDoc::line()
+            .append(RcDoc::text("order by").append(RcDoc::line().nest(2)))
+            .append(
+                RcDoc::intersperse(
+                    order_by.into_iter().map(transform_order_by),
+                    RcDoc::text(",").append(RcDoc::line()),
+                )
+                .nest(2)
+                .group(),
+            )
     } else {
-        doc
-    };
-
+        RcDoc::nil()
+    })
     // Limit.
-    if let Some(limit) = limit {
-        doc.append(
-            RcDoc::line()
-                .append(RcDoc::text("limit").append(RcDoc::line().nest(2)))
-                .append(RcDoc::text(limit.to_string())),
-        )
+    .append(if let Some(limit) = limit {
+        RcDoc::line()
+            .append(RcDoc::text("limit").append(RcDoc::line().nest(2)))
+            .append(RcDoc::text(limit.to_string()))
     } else {
-        doc
-    }
+        RcDoc::nil()
+    })
     .group()
 }
 
