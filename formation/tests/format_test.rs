@@ -35,15 +35,15 @@ fn fixture_paths(name: &str) -> (String, String) {
 )]
 fn test_format(fixture_paths: (String, String)) {
     let (input_path, expected_path) = fixture_paths;
-    let sql_string = fs::read_to_string(input_path.clone()).expect(&format!(
-        "Could not load fixture input path: {}",
-        input_path
-    ));
+    let sql_string = fs::read_to_string(input_path.clone())
+        .unwrap_or_else(|_| panic!("Could not load fixture input path: {}", input_path));
     assert_eq!(
         formation::format(sql_string, false, MAX_WIDTH).unwrap(),
-        vec![fs::read_to_string(expected_path.clone()).expect(&format!(
-            "Could not load fixture expected path: {}",
-            expected_path
-        ))]
+        vec![
+            fs::read_to_string(expected_path.clone()).unwrap_or_else(|_|panic!(
+                "Could not load fixture expected path: {}",
+                expected_path
+            ))
+        ]
     );
 }
