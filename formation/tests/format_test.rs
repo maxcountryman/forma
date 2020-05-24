@@ -131,3 +131,12 @@ fn test_values() {
         vec![fs::read_to_string("tests/sql/values_expected.sql").unwrap()]
     );
 }
+
+#[test]
+fn test_ctes() {
+    let sql_string = fs::read_to_string("tests/sql/ctes.sql").unwrap();
+    assert_eq!(
+        formation::format(sql_string, false, MAX_WIDTH).unwrap(),
+        vec![fs::read_to_string("tests/sql/ctes_expected.sql").unwrap()]
+    );
+}

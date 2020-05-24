@@ -539,15 +539,16 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
     // CTEs.
     if !ctes.is_empty() {
         RcDoc::text("with")
+            .append(RcDoc::space())
             .append(comma_separated(ctes.into_iter().map(
                 |Cte { alias, query }| {
-                    RcDoc::space()
-                        // Special-case CTEs alias handling.
-                        .append(RcDoc::text(format!("{} as", alias.to_string())))
+                    // Special-case CTEs alias handling.
+                    RcDoc::text(format!("{} as", alias.to_string()))
                         .append(RcDoc::softline())
                         .append(parenthenized(transform_query(query)))
                 },
             )))
+            .nest(2)
             .append(RcDoc::line().append(RcDoc::line()))
     } else {
         RcDoc::nil()
