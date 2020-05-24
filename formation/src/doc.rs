@@ -297,46 +297,45 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
 
 fn transform_join<'a>(join: Join) -> RcDoc<'a, ()> {
     fn prefix<'a>(constraint: &JoinConstraint) -> RcDoc<'a, ()> {
-        RcDoc::text(match constraint {
-            JoinConstraint::Natural => "natural",
-            _ => "",
-        })
+        match constraint {
+            JoinConstraint::Natural => RcDoc::text("natural").append(RcDoc::space()),
+            _ => RcDoc::nil(),
+        }
     }
 
     fn suffix<'a>(constraint: &JoinConstraint) -> RcDoc<'a, ()> {
-        match constraint {
+        match constraint.clone() {
             JoinConstraint::On(expr) => RcDoc::space().append(
-                RcDoc::text("on").append(RcDoc::space().append(transform_expr(Some(expr.clone())))),
+                RcDoc::text("on").append(RcDoc::space().append(transform_expr(Some(expr)))),
             ),
-            // TODO:
-            // JoinConstraint::Using(attrs) => &format!(" using ({})", display_comma_separated(attrs)),
+            JoinConstraint::Using(attrs) => {
+                RcDoc::space().append(RcDoc::text("using").append(RcDoc::space()).append(
+                    parenthenized(comma_separated(attrs.into_iter().map(RcDoc::text))),
+                ))
+            }
             _ => RcDoc::nil(),
         }
     }
 
     match join.join_operator {
-        JoinOperator::Inner(constraint) => RcDoc::text("join").append(
-            RcDoc::space().append(
-                prefix(&constraint)
+        JoinOperator::Inner(constraint) => prefix(&constraint).append(RcDoc::text("join")).append(
+            RcDoc::space().append(transform_relation(join.relation).append(suffix(&constraint))),
+        ),
+        JoinOperator::LeftOuter(constraint) => prefix(&constraint).append(
+            RcDoc::text("left join").append(
+                RcDoc::space()
                     .append(transform_relation(join.relation).append(suffix(&constraint))),
             ),
         ),
-        JoinOperator::LeftOuter(constraint) => RcDoc::text("left join").append(
-            RcDoc::space().append(
-                prefix(&constraint)
+        JoinOperator::RightOuter(constraint) => prefix(&constraint).append(
+            RcDoc::text("right join").append(
+                RcDoc::space()
                     .append(transform_relation(join.relation).append(suffix(&constraint))),
             ),
         ),
-        JoinOperator::RightOuter(constraint) => RcDoc::text("right join").append(
+        JoinOperator::FullOuter(constraint) => prefix(&constraint).append(RcDoc::text("full join").append(
             RcDoc::space().append(
-                prefix(&constraint)
-                    .append(transform_relation(join.relation).append(suffix(&constraint))),
-            ),
-        ),
-        JoinOperator::FullOuter(constraint) => RcDoc::text("full join").append(
-            RcDoc::space().append(
-                prefix(&constraint)
-                    .append(transform_relation(join.relation).append(suffix(&constraint))),
+                    transform_relation(join.relation).append(suffix(&constraint))),
             ),
         ),
         JoinOperator::CrossJoin => RcDoc::text("cross join")
