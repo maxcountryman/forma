@@ -414,7 +414,7 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
             having,
             group_by,
         }) => {
-            let mut doc = RcDoc::text("select")
+            RcDoc::text("select")
                 .append(if distinct {
                     RcDoc::space().append(RcDoc::text("disinct"))
                 } else {
@@ -424,11 +424,9 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
                 .append(comma_separated(
                     projection.into_iter().map(transform_select_item),
                 ))
-                .nest(2);
-
-            // From.
-            doc = if !from.is_empty() {
-                doc.append(
+                .nest(2)
+                // From.
+                .append(if !from.is_empty() {
                     RcDoc::hardline().append(RcDoc::text("from")).append(
                         RcDoc::line().nest(2).append(
                             comma_separated(from.into_iter().map(|table_with_joins| {
@@ -445,26 +443,20 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
                             .nest(2)
                             .group(),
                         ),
-                    ),
-                )
-            } else {
-                doc
-            };
-
-            // Selection.
-            doc = if selection.is_some() {
-                doc.append(
+                    )
+                } else {
+                    RcDoc::nil()
+                })
+                // Selection.
+                .append(if selection.is_some() {
                     RcDoc::line()
                         .append(RcDoc::text("where").append(RcDoc::line().nest(2)))
-                        .append(transform_expr(selection).nest(2)),
-                )
-            } else {
-                doc
-            };
-
-            // Group By.
-            doc = if !group_by.is_empty() {
-                doc.append(
+                        .append(transform_expr(selection).nest(2))
+                } else {
+                    RcDoc::nil()
+                })
+                // Group By.
+                .append(if !group_by.is_empty() {
                     RcDoc::line()
                         .append(RcDoc::text("group by").append(RcDoc::line().nest(2)))
                         .append(
@@ -473,22 +465,20 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
                             )
                             .nest(2)
                             .group(),
-                        ),
-                )
-            } else {
-                doc
-            };
+                        )
+                } else {
+                    RcDoc::nil()
+                })
 
             // Having.
-            if having.is_some() {
-                doc.append(
+            .append(if having.is_some() {
                     RcDoc::line()
                         .append(RcDoc::text("having").append(RcDoc::line().nest(2)))
-                        .append(transform_expr(having)),
-                )
+                        .append(transform_expr(having))
+                
             } else {
-                doc
-            }
+                RcDoc::nil()
+            })
         }
 
         SetExpr::SetOperation {
