@@ -104,3 +104,39 @@ fn test_group_by() {
         vec![fs::read_to_string("tests/sql/group_by_expected.sql").unwrap()]
     );
 }
+
+#[test]
+fn test_natural_join() {
+    let sql_string = fs::read_to_string("tests/sql/natural_join.sql").unwrap();
+    assert_eq!(
+        formation::format(sql_string, false, MAX_WIDTH).unwrap(),
+        vec![fs::read_to_string("tests/sql/natural_join_expected.sql").unwrap()]
+    );
+}
+
+#[test]
+fn test_join_using() {
+    let sql_string = fs::read_to_string("tests/sql/join_using.sql").unwrap();
+    assert_eq!(
+        formation::format(sql_string, false, MAX_WIDTH).unwrap(),
+        vec![fs::read_to_string("tests/sql/join_using_expected.sql").unwrap()]
+    );
+}
+
+#[test]
+fn test_values() {
+    let sql_string = fs::read_to_string("tests/sql/values.sql").unwrap();
+    assert_eq!(
+        formation::format(sql_string, false, MAX_WIDTH).unwrap(),
+        vec![fs::read_to_string("tests/sql/values_expected.sql").unwrap()]
+    );
+}
+
+#[test]
+fn test_ctes() {
+    let sql_string = fs::read_to_string("tests/sql/ctes.sql").unwrap();
+    assert_eq!(
+        formation::format(sql_string, false, MAX_WIDTH).unwrap(),
+        vec![fs::read_to_string("tests/sql/ctes_expected.sql").unwrap()]
+    );
+}

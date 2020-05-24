@@ -112,7 +112,6 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
                 .append(RcDoc::softline_())
                 .append(RcDoc::text(")")),
             Expr::Value(value) => RcDoc::text(value.to_string()),
-            // TODO: We shouldn't need `process_in_expr`.
             Expr::InSubquery {
                 expr,
                 negated,
@@ -168,14 +167,14 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
                 .append(
                     RcDoc::line().nest(2).append(
                         RcDoc::intersperse(
-                            conditions.iter().zip(results).map(|(c, r)| {
+                            conditions.iter().zip(results).map(|(condition, result)| {
                                 RcDoc::text("when")
                                     .append(RcDoc::space())
-                                    .append(transform_expr(Some(c.clone())))
+                                    .append(transform_expr(Some(condition.clone())))
                                     .append(RcDoc::space())
                                     .append(RcDoc::text("then"))
                                     .append(RcDoc::space())
-                                    .append(transform_expr(Some(r)))
+                                    .append(transform_expr(Some(result)))
                             }),
                             RcDoc::line(),
                         )
@@ -298,45 +297,45 @@ fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
 
 fn transform_join<'a>(join: Join) -> RcDoc<'a, ()> {
     fn prefix<'a>(constraint: &JoinConstraint) -> RcDoc<'a, ()> {
-        RcDoc::text(match constraint {
-            JoinConstraint::Natural => "natural",
-            _ => "",
-        })
+        match constraint {
+            JoinConstraint::Natural => RcDoc::text("natural").append(RcDoc::space()),
+            _ => RcDoc::nil(),
+        }
     }
 
     fn suffix<'a>(constraint: &JoinConstraint) -> RcDoc<'a, ()> {
-        match constraint {
+        match constraint.clone() {
             JoinConstraint::On(expr) => RcDoc::space().append(
-                RcDoc::text("on").append(RcDoc::space().append(transform_expr(Some(expr.clone())))),
+                RcDoc::text("on").append(RcDoc::space().append(transform_expr(Some(expr)))),
             ),
-            // TODO:
-            // JoinConstraint::Using(attrs) => &format!(" using ({})", display_comma_separated(attrs)),
+            JoinConstraint::Using(attrs) => {
+                RcDoc::space().append(RcDoc::text("using").append(RcDoc::space()).append(
+                    parenthenized(comma_separated(attrs.into_iter().map(RcDoc::text))),
+                ))
+            }
             _ => RcDoc::nil(),
         }
     }
 
     match join.join_operator {
-        JoinOperator::Inner(constraint) => RcDoc::text("join").append(
-            RcDoc::space().append(
-                prefix(&constraint)
+        JoinOperator::Inner(constraint) => prefix(&constraint).append(RcDoc::text("join")).append(
+            RcDoc::space().append(transform_relation(join.relation).append(suffix(&constraint))),
+        ),
+        JoinOperator::LeftOuter(constraint) => prefix(&constraint).append(
+            RcDoc::text("left join").append(
+                RcDoc::space()
                     .append(transform_relation(join.relation).append(suffix(&constraint))),
             ),
         ),
-        JoinOperator::LeftOuter(constraint) => RcDoc::text("left join").append(
-            RcDoc::space().append(
-                prefix(&constraint)
+        JoinOperator::RightOuter(constraint) => prefix(&constraint).append(
+            RcDoc::text("right join").append(
+                RcDoc::space()
                     .append(transform_relation(join.relation).append(suffix(&constraint))),
             ),
         ),
-        JoinOperator::RightOuter(constraint) => RcDoc::text("right join").append(
-            RcDoc::space().append(
-                prefix(&constraint)
-                    .append(transform_relation(join.relation).append(suffix(&constraint))),
-            ),
-        ),
-        JoinOperator::FullOuter(constraint) => RcDoc::text("full join").append(
-            RcDoc::space().append(
-                prefix(&constraint)
+        JoinOperator::FullOuter(constraint) => prefix(&constraint).append(
+            RcDoc::text("full join").append(
+                RcDoc::space()
                     .append(transform_relation(join.relation).append(suffix(&constraint))),
             ),
         ),
@@ -513,8 +512,16 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
         // Parenthensized query, i.e. order evaluation enforcement.
         SetExpr::Query(query) => parenthenized(transform_query(*query)),
 
-        // TODO: Handle all `SetExpr` variants.
-        _ => unreachable!("Unhandled `SetExpr`"),
+        // Values, such as insert values for the given expression.
+        SetExpr::Values(values) => {
+            RcDoc::text("values")
+                .append(RcDoc::space())
+                .append(RcDoc::concat(values.0.into_iter().map(|row| {
+                    parenthenized(comma_separated(
+                        row.into_iter().map(|expr| transform_expr(Some(expr))),
+                    ))
+                })))
+        }
     }
 }
 
@@ -525,60 +532,52 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
         order_by,
         limit,
         ctes,
+        // TODO: offset, fetch
         offset: _,
         fetch: _,
     } = query;
     // CTEs.
-    let mut doc: RcDoc<'a, ()> = if !ctes.is_empty() {
+    if !ctes.is_empty() {
         RcDoc::text("with")
+            .append(RcDoc::space())
             .append(comma_separated(ctes.into_iter().map(
                 |Cte { alias, query }| {
-                    RcDoc::space()
-                        // Special-case CTEs alias handling.
-                        .append(RcDoc::text(format!("{} as", alias.to_string())))
+                    // Special-case CTEs alias handling.
+                    RcDoc::text(format!("{} as", alias.to_string()))
                         .append(RcDoc::softline())
                         .append(parenthenized(transform_query(query)))
                 },
             )))
+            .nest(2)
             .append(RcDoc::line().append(RcDoc::line()))
     } else {
         RcDoc::nil()
-    };
-
-    // Query body, e.g. `select * from t1 where x > 1`.
-    doc = match body {
-        SetExpr::Select(..) | SetExpr::SetOperation { .. } => doc.append(transform_set_expr(body)),
-        _ => doc,
-    };
-
-    // Order by.
-    doc = if !order_by.is_empty() {
-        doc.append(
-            RcDoc::line()
-                .append(RcDoc::text("order by").append(RcDoc::line().nest(2)))
-                .append(
-                    RcDoc::intersperse(
-                        order_by.into_iter().map(transform_order_by),
-                        RcDoc::text(",").append(RcDoc::line()),
-                    )
-                    .nest(2)
-                    .group(),
-                ),
-        )
-    } else {
-        doc
-    };
-
-    // Limit.
-    if let Some(limit) = limit {
-        doc.append(
-            RcDoc::line()
-                .append(RcDoc::text("limit").append(RcDoc::line().nest(2)))
-                .append(RcDoc::text(limit.to_string())),
-        )
-    } else {
-        doc
     }
+    // Query body, e.g. `select * from t1 where x > 1`.
+    .append(transform_set_expr(body))
+    // Order by.
+    .append(if !order_by.is_empty() {
+        RcDoc::line()
+            .append(RcDoc::text("order by").append(RcDoc::line().nest(2)))
+            .append(
+                RcDoc::intersperse(
+                    order_by.into_iter().map(transform_order_by),
+                    RcDoc::text(",").append(RcDoc::line()),
+                )
+                .nest(2)
+                .group(),
+            )
+    } else {
+        RcDoc::nil()
+    })
+    // Limit.
+    .append(if let Some(limit) = limit {
+        RcDoc::line()
+            .append(RcDoc::text("limit").append(RcDoc::line().nest(2)))
+            .append(RcDoc::text(limit.to_string()))
+    } else {
+        RcDoc::nil()
+    })
     .group()
 }
 

@@ -1,0 +1,1 @@
+values ('foo', 'bar', 'baz');
