@@ -333,9 +333,10 @@ fn transform_join<'a>(join: Join) -> RcDoc<'a, ()> {
                     .append(transform_relation(join.relation).append(suffix(&constraint))),
             ),
         ),
-        JoinOperator::FullOuter(constraint) => prefix(&constraint).append(RcDoc::text("full join").append(
-            RcDoc::space().append(
-                    transform_relation(join.relation).append(suffix(&constraint))),
+        JoinOperator::FullOuter(constraint) => prefix(&constraint).append(
+            RcDoc::text("full join").append(
+                RcDoc::space()
+                    .append(transform_relation(join.relation).append(suffix(&constraint))),
             ),
         ),
         JoinOperator::CrossJoin => RcDoc::text("cross join")
