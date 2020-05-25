@@ -86,5 +86,6 @@ jobs:
       - name: Publish
         shell: bash
         run: |
+          cargo publish --token ${{ secrets.CRATES_TOKEN }} --manifest-path formation/Cargo.toml
           cp forma/publish/Cargo.toml forma/Cargo.toml
           cargo publish --token ${{ secrets.CRATES_TOKEN }} --manifest-path forma/Cargo.toml --allow-dirty
