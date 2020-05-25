@@ -548,7 +548,7 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
             .append(
                 comma_separated(order_by.into_iter().map(transform_order_by))
                     .nest(2)
-                    .group()
+                    .group(),
             )
     } else {
         RcDoc::nil()
