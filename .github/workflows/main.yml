@@ -87,4 +87,4 @@ jobs:
         shell: bash
         run: |
           cargo publish --token ${{ secrets.CRATES_TOKEN }} --manifest-path formation/Cargo.toml
-          cargo publish --token ${{ secrets.CRATES_TOKEN }} --manifest-path forma/Cargo.toml
+          cargo publish --token ${{ secrets.CRATES_TOKEN }} --manifest-path forma/Cargo.publish.toml

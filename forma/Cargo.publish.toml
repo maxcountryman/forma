@@ -7,5 +7,5 @@ description = "An opinionated SQL formatter."
 license = "MIT"
 
 [dependencies]
-formation = { path = "../formation" }
+formation = "0.1.0"
 structopt = "0.3.14"
