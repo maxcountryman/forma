@@ -31,7 +31,7 @@ fn parenthenized(doc: RcDoc<'_, ()>) -> RcDoc<'_, ()> {
 
 /// Resolves a possibly negated expression to an `RcDoc`.
 fn resolve_negation<'a>(expr: Expr, negated: bool) -> RcDoc<'a, ()> {
-    transform_expr(Some(expr))
+    transform_expr(expr)
         .append(RcDoc::space())
         .append(if negated {
             RcDoc::text("not").append(RcDoc::space())
@@ -44,12 +44,12 @@ fn resolve_negation<'a>(expr: Expr, negated: bool) -> RcDoc<'a, ()> {
 
 fn transform_select_item<'a>(select_item: SelectItem) -> RcDoc<'a, ()> {
     match select_item {
-        SelectItem::ExprWithAlias { expr, alias } => transform_expr(Some(expr))
+        SelectItem::ExprWithAlias { expr, alias } => transform_expr(expr)
             .append(RcDoc::space())
             .append(RcDoc::text("as"))
             .append(RcDoc::space())
             .append(RcDoc::text(alias)),
-        SelectItem::UnnamedExpr(expr) => transform_expr(Some(expr)),
+        SelectItem::UnnamedExpr(expr) => transform_expr(expr),
         SelectItem::QualifiedWildcard(object_name) => RcDoc::text(object_name.to_string()),
         SelectItem::Wildcard => RcDoc::text("*"),
     }
@@ -57,241 +57,234 @@ fn transform_select_item<'a>(select_item: SelectItem) -> RcDoc<'a, ()> {
 
 /// Transforms the given `Expr` into an `RcDoc`. If `expr` is `None`, returns
 /// a nil `RcDoc`.
-fn transform_expr<'a>(expr: Option<Expr>) -> RcDoc<'a, ()> {
+fn transform_expr<'a>(expr: Expr) -> RcDoc<'a, ()> {
     match expr {
-        Some(expr) => match expr {
-            Expr::Identifier(ident) => RcDoc::text(ident),
-            Expr::Wildcard => RcDoc::text("*"),
-            Expr::QualifiedWildcard(qualifiers) => {
-                RcDoc::intersperse(qualifiers, RcDoc::text(".")).append(RcDoc::text(".*"))
-            }
-            Expr::CompoundIdentifier(idents) => RcDoc::intersperse(idents, RcDoc::text(".")),
-            Expr::BinaryOp { left, op, right } => {
-                let op_string = op.to_string().to_lowercase();
-                transform_expr(Some(*left))
-                    .append(if is_newline_op(&op) {
-                        RcDoc::hardline()
-                            .append(RcDoc::text(op_string))
-                            .append(RcDoc::space())
-                    } else {
-                        RcDoc::space().append(RcDoc::text(op_string).append(RcDoc::space()))
-                    })
-                    .append(transform_expr(Some(*right)))
-            }
-            Expr::UnaryOp { expr, op } => RcDoc::text(op.to_string().to_lowercase())
-                .append(RcDoc::space())
-                .append(transform_expr(Some(*expr))),
-            Expr::Cast { expr, data_type } => RcDoc::text("cast")
-                .append(RcDoc::text("("))
-                .append(
-                    transform_expr(Some(*expr))
+        Expr::Identifier(ident) => RcDoc::text(ident),
+        Expr::Wildcard => RcDoc::text("*"),
+        Expr::QualifiedWildcard(qualifiers) => {
+            RcDoc::intersperse(qualifiers, RcDoc::text(".")).append(RcDoc::text(".*"))
+        }
+        Expr::CompoundIdentifier(idents) => RcDoc::intersperse(idents, RcDoc::text(".")),
+        Expr::BinaryOp { left, op, right } => {
+            let op_string = op.to_string().to_lowercase();
+            transform_expr(*left)
+                .append(if is_newline_op(&op) {
+                    RcDoc::hardline()
+                        .append(RcDoc::text(op_string))
                         .append(RcDoc::space())
-                        .append(RcDoc::text("as"))
-                        .append(RcDoc::text(data_type.to_string().to_lowercase())),
-                )
-                .append(RcDoc::text(")")),
-            Expr::Extract { field, expr } => RcDoc::text("extract")
-                .append(RcDoc::text("("))
-                .append(
-                    RcDoc::text(field.to_string())
-                        .append(RcDoc::space())
-                        .append(RcDoc::text("from"))
-                        .append(RcDoc::space())
-                        .append(transform_expr(Some(*expr))),
-                )
-                .append(RcDoc::text(")")),
-            Expr::Collate { expr, collation } => transform_expr(Some(*expr))
-                .append(RcDoc::space())
-                .append(RcDoc::text("collate"))
-                .append(RcDoc::space())
-                .append(RcDoc::text(collation.to_string())),
-            Expr::Nested(expr) => RcDoc::text("(")
-                .append(RcDoc::softline_())
-                .append(transform_expr(Some(*expr)).group())
-                .nest(2)
-                .append(RcDoc::softline_())
-                .append(RcDoc::text(")")),
-            Expr::Value(value) => RcDoc::text(value.to_string()),
-            Expr::InSubquery {
-                expr,
-                negated,
-                subquery,
-            } => resolve_negation(*expr, negated).append(parenthenized(transform_query(*subquery))),
-            Expr::InList {
-                expr,
-                negated,
-                list,
-            } => resolve_negation(*expr, negated).append(parenthenized(comma_separated(
-                list.into_iter().map(|expr| transform_expr(Some(expr))),
-            ))),
-            Expr::Exists(box query) => RcDoc::text("exists")
-                .append(RcDoc::softline().append(parenthenized(transform_query(query)))),
-            Expr::Subquery(box query) => {
-                RcDoc::softline_().append(parenthenized(transform_query(query)))
-            }
-            Expr::Between {
-                expr,
-                negated,
-                low,
-                high,
-            } => transform_expr(Some(*expr))
-                .append(if negated {
-                    RcDoc::text("not")
                 } else {
-                    RcDoc::nil()
+                    RcDoc::space().append(RcDoc::text(op_string).append(RcDoc::space()))
                 })
-                .append(
-                    RcDoc::space().append(
-                        RcDoc::text("between")
-                            .append(RcDoc::space())
-                            .append(transform_expr(Some(*low)))
-                            .append(
-                                RcDoc::space()
-                                    .append(RcDoc::text("and"))
-                                    .append(RcDoc::space()),
-                            )
-                            .append(transform_expr(Some(*high))),
-                    ),
-                ),
-            Expr::Case {
-                operand,
-                conditions,
-                results,
-                else_result,
-            } => RcDoc::text("case")
-                .append(if let Some(operand) = operand {
-                    RcDoc::space().append(transform_expr(Some(*operand)))
-                } else {
-                    RcDoc::nil()
-                })
-                .append(
-                    RcDoc::line().nest(2).append(
-                        RcDoc::intersperse(
-                            conditions.iter().zip(results).map(|(condition, result)| {
-                                RcDoc::text("when")
-                                    .append(RcDoc::space())
-                                    .append(transform_expr(Some(condition.clone())))
-                                    .append(RcDoc::space())
-                                    .append(RcDoc::text("then"))
-                                    .append(RcDoc::space())
-                                    .append(transform_expr(Some(result)))
-                            }),
-                            RcDoc::line(),
+                .append(transform_expr(*right))
+        }
+        Expr::UnaryOp { expr, op } => RcDoc::text(op.to_string().to_lowercase())
+            .append(RcDoc::space())
+            .append(transform_expr(*expr)),
+        Expr::Cast { expr, data_type } => RcDoc::text("cast")
+            .append(RcDoc::text("("))
+            .append(
+                transform_expr(*expr)
+                    .append(RcDoc::space())
+                    .append(RcDoc::text("as"))
+                    .append(RcDoc::text(data_type.to_string().to_lowercase())),
+            )
+            .append(RcDoc::text(")")),
+        Expr::Extract { field, expr } => RcDoc::text("extract")
+            .append(RcDoc::text("("))
+            .append(
+                RcDoc::text(field.to_string())
+                    .append(RcDoc::space())
+                    .append(RcDoc::text("from"))
+                    .append(RcDoc::space())
+                    .append(transform_expr(*expr)),
+            )
+            .append(RcDoc::text(")")),
+        Expr::Collate { expr, collation } => transform_expr(*expr)
+            .append(RcDoc::space())
+            .append(RcDoc::text("collate"))
+            .append(RcDoc::space())
+            .append(RcDoc::text(collation.to_string())),
+        Expr::Nested(expr) => RcDoc::text("(")
+            .append(RcDoc::softline_())
+            .append(transform_expr(*expr).group())
+            .nest(2)
+            .append(RcDoc::softline_())
+            .append(RcDoc::text(")")),
+        Expr::Value(value) => RcDoc::text(value.to_string()),
+        Expr::InSubquery {
+            expr,
+            negated,
+            subquery,
+        } => resolve_negation(*expr, negated).append(parenthenized(transform_query(*subquery))),
+        Expr::InList {
+            expr,
+            negated,
+            list,
+        } => resolve_negation(*expr, negated).append(parenthenized(comma_separated(
+            list.into_iter().map(transform_expr),
+        ))),
+        Expr::Exists(box query) => RcDoc::text("exists")
+            .append(RcDoc::softline().append(parenthenized(transform_query(query)))),
+        Expr::Subquery(box query) => {
+            RcDoc::softline_().append(parenthenized(transform_query(query)))
+        }
+        Expr::Between {
+            expr,
+            negated,
+            low,
+            high,
+        } => transform_expr(*expr)
+            .append(if negated {
+                RcDoc::text("not")
+            } else {
+                RcDoc::nil()
+            })
+            .append(
+                RcDoc::space().append(
+                    RcDoc::text("between")
+                        .append(RcDoc::space())
+                        .append(transform_expr(*low))
+                        .append(
+                            RcDoc::space()
+                                .append(RcDoc::text("and"))
+                                .append(RcDoc::space()),
                         )
-                        .append(if let Some(else_result) = else_result {
-                            RcDoc::line().nest(2).append(
-                                RcDoc::text("else")
-                                    .append(RcDoc::space())
-                                    .append(transform_expr(Some(*else_result))),
-                            )
-                        } else {
-                            RcDoc::nil()
+                        .append(transform_expr(*high)),
+                ),
+            ),
+        Expr::Case {
+            operand,
+            conditions,
+            results,
+            else_result,
+        } => RcDoc::text("case")
+            .append(if let Some(operand) = operand {
+                RcDoc::space().append(transform_expr(*operand))
+            } else {
+                RcDoc::nil()
+            })
+            .append(
+                RcDoc::line().nest(2).append(
+                    RcDoc::intersperse(
+                        conditions.iter().zip(results).map(|(condition, result)| {
+                            RcDoc::text("when")
+                                .append(RcDoc::space())
+                                .append(transform_expr(condition.clone()))
+                                .append(RcDoc::space())
+                                .append(RcDoc::text("then"))
+                                .append(RcDoc::space())
+                                .append(transform_expr(result))
                         }),
-                    ),
-                )
-                .append(RcDoc::line().append(RcDoc::text("end"))),
-            Expr::IsNull(expr) => transform_expr(Some(*expr))
-                .append(RcDoc::space())
-                .append(RcDoc::text("is null")),
-            Expr::IsNotNull(expr) => transform_expr(Some(*expr))
-                .append(RcDoc::space())
-                .append(RcDoc::text("is not null")),
-            Expr::Function(Function {
-                name,
-                args,
-                over,
-                distinct,
-            }) => RcDoc::text(name.to_string().to_lowercase())
-                .append(parenthenized(
-                    if distinct {
-                        RcDoc::text("distinct").append(RcDoc::space())
+                        RcDoc::line(),
+                    )
+                    .append(if let Some(else_result) = else_result {
+                        RcDoc::line().nest(2).append(
+                            RcDoc::text("else")
+                                .append(RcDoc::space())
+                                .append(transform_expr(*else_result)),
+                        )
                     } else {
                         RcDoc::nil()
-                    }
-                    .append(comma_separated(
-                        args.into_iter().map(|expr| transform_expr(Some(expr))),
-                    )),
-                ))
-                .append(
-                    if let Some(WindowSpec {
-                        partition_by,
-                        order_by,
-                        window_frame,
-                    }) = over
-                    {
-                        RcDoc::space().append(
-                            RcDoc::text("over").append(parenthenized(
-                                if !partition_by.is_empty() {
-                                    RcDoc::text("partition by")
-                                        .append(RcDoc::space())
-                                        .append(comma_separated(
-                                            partition_by
-                                                .into_iter()
-                                                .map(|expr| transform_expr(Some(expr))),
-                                        ))
-                                        .append(RcDoc::space())
-                                } else {
-                                    RcDoc::nil()
-                                }
-                                .append(if !order_by.is_empty() {
-                                    RcDoc::line_().append(
-                                        RcDoc::text("order by").append(RcDoc::space()).append(
-                                            comma_separated(order_by.into_iter().map(
-                                                |OrderByExpr { expr, asc }| {
-                                                    transform_expr(Some(expr)).append(
-                                                        if let Some(asc) = asc {
-                                                            RcDoc::space().append(if asc {
-                                                                RcDoc::text("asc")
-                                                            } else {
-                                                                RcDoc::text("desc")
-                                                            })
+                    }),
+                ),
+            )
+            .append(RcDoc::line().append(RcDoc::text("end"))),
+        Expr::IsNull(expr) => transform_expr(*expr)
+            .append(RcDoc::space())
+            .append(RcDoc::text("is null")),
+        Expr::IsNotNull(expr) => transform_expr(*expr)
+            .append(RcDoc::space())
+            .append(RcDoc::text("is not null")),
+        Expr::Function(Function {
+            name,
+            args,
+            over,
+            distinct,
+        }) => RcDoc::text(name.to_string().to_lowercase())
+            .append(parenthenized(
+                if distinct {
+                    RcDoc::text("distinct").append(RcDoc::space())
+                } else {
+                    RcDoc::nil()
+                }
+                .append(comma_separated(args.into_iter().map(transform_expr))),
+            ))
+            .append(
+                if let Some(WindowSpec {
+                    partition_by,
+                    order_by,
+                    window_frame,
+                }) = over
+                {
+                    RcDoc::space().append(
+                        RcDoc::text("over").append(parenthenized(
+                            if !partition_by.is_empty() {
+                                RcDoc::text("partition by")
+                                    .append(RcDoc::space())
+                                    .append(comma_separated(
+                                        partition_by.into_iter().map(transform_expr),
+                                    ))
+                                    .append(RcDoc::space())
+                            } else {
+                                RcDoc::nil()
+                            }
+                            .append(if !order_by.is_empty() {
+                                RcDoc::line_().append(
+                                    RcDoc::text("order by").append(RcDoc::space()).append(
+                                        comma_separated(order_by.into_iter().map(
+                                            |OrderByExpr { expr, asc }| {
+                                                transform_expr(expr).append(
+                                                    if let Some(asc) = asc {
+                                                        RcDoc::space().append(if asc {
+                                                            RcDoc::text("asc")
                                                         } else {
-                                                            RcDoc::nil()
-                                                        },
-                                                    )
-                                                },
-                                            )),
-                                        ),
+                                                            RcDoc::text("desc")
+                                                        })
+                                                    } else {
+                                                        RcDoc::nil()
+                                                    },
+                                                )
+                                            },
+                                        )),
+                                    ),
+                                )
+                            } else {
+                                RcDoc::nil()
+                            })
+                            .append(
+                                if let Some(WindowFrame {
+                                    units,
+                                    start_bound,
+                                    end_bound,
+                                }) = window_frame
+                                {
+                                    RcDoc::line_().append(
+                                        RcDoc::text(units.to_string().to_lowercase())
+                                            .append(RcDoc::space())
+                                            .append(RcDoc::text("between"))
+                                            .append(RcDoc::space())
+                                            .append(start_bound.to_string().to_lowercase())
+                                            .append(if let Some(end_bound) = end_bound {
+                                                RcDoc::space()
+                                                    .append(RcDoc::text("and"))
+                                                    .append(RcDoc::space())
+                                                    .append(RcDoc::text(
+                                                        end_bound.to_string().to_lowercase(),
+                                                    ))
+                                            } else {
+                                                RcDoc::nil()
+                                            }),
                                     )
                                 } else {
                                     RcDoc::nil()
-                                })
-                                .append(
-                                    if let Some(WindowFrame {
-                                        units,
-                                        start_bound,
-                                        end_bound,
-                                    }) = window_frame
-                                    {
-                                        RcDoc::line_().append(
-                                            RcDoc::text(units.to_string().to_lowercase())
-                                                .append(RcDoc::space())
-                                                .append(RcDoc::text("between"))
-                                                .append(RcDoc::space())
-                                                .append(start_bound.to_string().to_lowercase())
-                                                .append(if let Some(end_bound) = end_bound {
-                                                    RcDoc::space()
-                                                        .append(RcDoc::text("and"))
-                                                        .append(RcDoc::space())
-                                                        .append(RcDoc::text(
-                                                            end_bound.to_string().to_lowercase(),
-                                                        ))
-                                                } else {
-                                                    RcDoc::nil()
-                                                }),
-                                        )
-                                    } else {
-                                        RcDoc::nil()
-                                    },
-                                ),
-                            )),
-                        )
-                    } else {
-                        RcDoc::nil()
-                    },
-                ),
-        },
-        None => RcDoc::nil(),
+                                },
+                            ),
+                        )),
+                    )
+                } else {
+                    RcDoc::nil()
+                },
+            ),
     }
 }
 
@@ -305,9 +298,8 @@ fn transform_join<'a>(join: Join) -> RcDoc<'a, ()> {
 
     fn suffix<'a>(constraint: &JoinConstraint) -> RcDoc<'a, ()> {
         match constraint.clone() {
-            JoinConstraint::On(expr) => RcDoc::space().append(
-                RcDoc::text("on").append(RcDoc::space().append(transform_expr(Some(expr)))),
-            ),
+            JoinConstraint::On(expr) => RcDoc::space()
+                .append(RcDoc::text("on").append(RcDoc::space().append(transform_expr(expr)))),
             JoinConstraint::Using(attrs) => {
                 RcDoc::space().append(RcDoc::text("using").append(RcDoc::space()).append(
                     parenthenized(comma_separated(attrs.into_iter().map(RcDoc::text))),
@@ -351,7 +343,7 @@ fn transform_join<'a>(join: Join) -> RcDoc<'a, ()> {
 fn transform_exprs<'a>(exprs: Vec<Expr>) -> RcDoc<'a, ()> {
     if !exprs.is_empty() {
         parenthenized(comma_separated(
-            exprs.iter().map(|expr| transform_expr(Some(expr.clone()))),
+            exprs.iter().map(|expr| transform_expr(expr.clone())),
         ))
     } else {
         RcDoc::nil()
@@ -392,7 +384,7 @@ fn transform_relation<'a>(relation: TableFactor) -> RcDoc<'a, ()> {
 
 fn transform_order_by<'a>(order_by_expr: OrderByExpr) -> RcDoc<'a, ()> {
     let OrderByExpr { expr, asc } = order_by_expr;
-    transform_expr(Some(expr)).append(if let Some(asc) = asc {
+    transform_expr(expr).append(if let Some(asc) = asc {
         RcDoc::line().append(if asc {
             RcDoc::text("asc")
         } else {
@@ -448,7 +440,7 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
                     RcDoc::nil()
                 })
                 // Selection.
-                .append(if selection.is_some() {
+                .append(if let Some(selection) = selection {
                     RcDoc::line()
                         .append(RcDoc::text("where").append(RcDoc::line().nest(2)))
                         .append(transform_expr(selection).nest(2))
@@ -460,17 +452,15 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
                     RcDoc::line()
                         .append(RcDoc::text("group by").append(RcDoc::line().nest(2)))
                         .append(
-                            comma_separated(
-                                group_by.into_iter().map(|expr| transform_expr(Some(expr))),
-                            )
-                            .nest(2)
-                            .group(),
+                            comma_separated(group_by.into_iter().map(transform_expr))
+                                .nest(2)
+                                .group(),
                         )
                 } else {
                     RcDoc::nil()
                 })
                 // Having.
-                .append(if having.is_some() {
+                .append(if let Some(having) = having {
                     RcDoc::line()
                         .append(RcDoc::text("having").append(RcDoc::line().nest(2)))
                         .append(transform_expr(having))
@@ -503,9 +493,7 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
             RcDoc::text("values")
                 .append(RcDoc::space())
                 .append(RcDoc::concat(values.0.into_iter().map(|row| {
-                    parenthenized(comma_separated(
-                        row.into_iter().map(|expr| transform_expr(Some(expr))),
-                    ))
+                    parenthenized(comma_separated(row.into_iter().map(transform_expr)))
                 })))
         }
     }
