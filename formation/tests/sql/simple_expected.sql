@@ -1,6 +1,1 @@
-select
-  *
-from
-  users
-where
-  created_at > {{date}};
+select * from users where created_at > {{date}};

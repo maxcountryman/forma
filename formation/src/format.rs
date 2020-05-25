@@ -51,7 +51,7 @@ fn format_statement(
 /// let sql_string = "SELECT * FROM users;".to_owned();
 /// assert_eq!(
 ///     format(sql_string, false, 100).unwrap(),
-///     vec!["select\n  *\nfrom\n  users;\n".to_owned()]
+///     vec!["select * from users;\n".to_owned()]
 /// );
 /// ```
 pub fn format(sql_string: String, check: bool, max_width: usize) -> error::Result<Vec<String>> {
@@ -107,7 +107,7 @@ mod tests {
         let sql_string = "select id from users where created_at > {{date}};".to_owned();
         assert_eq!(
             format(sql_string, false, MAX_WIDTH).unwrap(),
-            vec!["select\n  id\nfrom\n  users\nwhere\n  created_at > {{date}};\n".to_owned()]
+            vec!["select id from users where created_at > {{date}};\n".to_owned()]
         );
     }
 }

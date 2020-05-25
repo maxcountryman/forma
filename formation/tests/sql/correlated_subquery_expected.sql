@@ -5,14 +5,7 @@ select
 from
   sales as s
 where
-  qtysold = (
-    select
-      max(numtickets)
-    from
-      listing as l
-    where
-      s.listid = l.listid
-  )
+  qtysold = (select max(numtickets) from listing as l where s.listid = l.listid)
 group by
   1, 2
 order by
