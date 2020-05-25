@@ -1,9 +1,9 @@
 use crate::error::{self, FormaError};
 use pretty::RcDoc;
 use sqlparser::ast::{
-    BinaryOperator, Cte, Expr, Function, Join, JoinConstraint, JoinOperator, OrderByExpr, Query,
-    Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, TableWithJoins, WindowFrame,
-    WindowSpec,
+    BinaryOperator, Cte, Expr, Fetch, Function, Join, JoinConstraint, JoinOperator, OrderByExpr,
+    Query, Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, TableWithJoins,
+    WindowFrame, WindowSpec,
 };
 
 /// Returns `true` if the given `BinaryOperator` should create a newline,
@@ -366,19 +366,27 @@ fn transform_relation<'a>(relation: TableFactor) -> RcDoc<'a, ()> {
             name,
             alias,
             args,
-            // TODO: `with_hints` support.
-            with_hints: _,
+            with_hints,
         } => RcDoc::text(name.to_string())
             .append(transform_exprs(args))
-            .append(transform_alias(alias)),
+            .append(transform_alias(alias))
+            .append(if !with_hints.is_empty() {
+                RcDoc::space().append(RcDoc::text("with").append(RcDoc::space()).append(
+                    parenthenized(comma_separated(with_hints.into_iter().map(transform_expr))),
+                ))
+            } else {
+                RcDoc::nil()
+            }),
         TableFactor::Derived {
             lateral,
             subquery,
             alias,
         } => RcDoc::text(if lateral { "lateral " } else { "" })
             .append(parenthenized(transform_query(*subquery)).append(transform_alias(alias))),
-        // TODO: handle other `TableFactor` variants.
-        _ => RcDoc::text(relation.to_string()),
+        TableFactor::NestedJoin(box TableWithJoins { relation, joins }) => {
+            transform_relation(relation)
+                .append(RcDoc::concat(joins.into_iter().map(transform_join)))
+        }
     }
 }
 
@@ -506,9 +514,8 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
         order_by,
         limit,
         ctes,
-        // TODO: offset, fetch
-        offset: _,
-        fetch: _,
+        offset,
+        fetch,
     } = query;
     // CTEs.
     if !ctes.is_empty() {
@@ -549,6 +556,54 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
     } else {
         RcDoc::nil()
     })
+    // Offset.
+    .append(if let Some(offset) = offset {
+        RcDoc::line().append(
+            RcDoc::text("offset")
+                .append(RcDoc::space())
+                .append(transform_expr(offset))
+                .append(RcDoc::space())
+                .append(RcDoc::text("rows")),
+        )
+    } else {
+        RcDoc::nil()
+    })
+    // Fetch.
+    .append(
+        if let Some(Fetch {
+            with_ties,
+            percent,
+            quantity,
+        }) = fetch
+        {
+            let extension = if with_ties {
+                RcDoc::text("with ties")
+            } else {
+                RcDoc::text("only")
+            };
+            RcDoc::line().append(if let Some(quantity) = quantity {
+                let percent = if percent {
+                    RcDoc::space().append(RcDoc::text("percent"))
+                } else {
+                    RcDoc::nil()
+                };
+                RcDoc::text("fetch first")
+                    .append(RcDoc::space())
+                    .append(transform_expr(quantity))
+                    .append(percent)
+                    .append(RcDoc::space())
+                    .append(RcDoc::text("rows"))
+                    .append(RcDoc::space())
+                    .append(extension)
+            } else {
+                RcDoc::text("fetch first rows")
+                    .append(RcDoc::space())
+                    .append(extension)
+            })
+        } else {
+            RcDoc::nil()
+        },
+    )
     .group()
 }
 
