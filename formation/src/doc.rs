@@ -1,9 +1,9 @@
 use crate::error::{self, FormaError};
 use pretty::RcDoc;
 use sqlparser::ast::{
-    BinaryOperator, Cte, Expr, Function, Join, JoinConstraint, JoinOperator, OrderByExpr, Query,
-    Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, TableWithJoins, WindowFrame,
-    WindowSpec,
+    BinaryOperator, Cte, Expr, Fetch, Function, Join, JoinConstraint, JoinOperator, OrderByExpr,
+    Query, Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, TableWithJoins,
+    WindowFrame, WindowSpec,
 };
 
 /// Returns `true` if the given `BinaryOperator` should create a newline,
@@ -514,9 +514,8 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
         order_by,
         limit,
         ctes,
-        // TODO: offset, fetch
-        offset: _,
-        fetch: _,
+        offset,
+        fetch,
     } = query;
     // CTEs.
     if !ctes.is_empty() {
@@ -557,6 +556,54 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
     } else {
         RcDoc::nil()
     })
+    // Offset.
+    .append(if let Some(offset) = offset {
+        RcDoc::line().append(
+            RcDoc::text("offset")
+                .append(RcDoc::space())
+                .append(transform_expr(offset))
+                .append(RcDoc::space())
+                .append(RcDoc::text("rows")),
+        )
+    } else {
+        RcDoc::nil()
+    })
+    // Fetch.
+    .append(
+        if let Some(Fetch {
+            with_ties,
+            percent,
+            quantity,
+        }) = fetch
+        {
+            let extension = if with_ties {
+                RcDoc::text("with ties")
+            } else {
+                RcDoc::text("only")
+            };
+            RcDoc::line().append(if let Some(quantity) = quantity {
+                let percent = if percent {
+                    RcDoc::space().append(RcDoc::text("percent"))
+                } else {
+                    RcDoc::nil()
+                };
+                RcDoc::text("fetch first")
+                    .append(RcDoc::space())
+                    .append(transform_expr(quantity))
+                    .append(percent)
+                    .append(RcDoc::space())
+                    .append(RcDoc::text("rows"))
+                    .append(RcDoc::space())
+                    .append(extension)
+            } else {
+                RcDoc::text("fetch first rows")
+                    .append(RcDoc::space())
+                    .append(extension)
+            })
+        } else {
+            RcDoc::nil()
+        },
+    )
     .group()
 }
 
