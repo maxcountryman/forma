@@ -13,8 +13,8 @@ An opinionated SQL formatter.
 <a href="https://crates.io/crates/forma">
 <img src="http://meritbadge.herokuapp.com/forma"/>
 </a>
-<a href="http://docs.rs/forma">
-<img src="https://docs.rs/forma/badge.svg"/>
+<a href="http://docs.rs/formation">
+<img src="https://docs.rs/formation/badge.svg"/>
 </a>  
 <a href="https://maxcountryman.github.io/forma">
 <img src="https://img.shields.io/badge/docs-master-green.svg"/>
