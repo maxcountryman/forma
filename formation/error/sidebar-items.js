@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["FormaError","Forma error type."]],"type":[["Result","An alias for a `std::result::Result` that pins `FormaError`."]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["format","Formats a given SQL string in accordance with the given maximum width."]]});
