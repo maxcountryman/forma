@@ -366,19 +366,27 @@ fn transform_relation<'a>(relation: TableFactor) -> RcDoc<'a, ()> {
             name,
             alias,
             args,
-            // TODO: `with_hints` support.
-            with_hints: _,
+            with_hints,
         } => RcDoc::text(name.to_string())
             .append(transform_exprs(args))
-            .append(transform_alias(alias)),
+            .append(transform_alias(alias))
+            .append(if !with_hints.is_empty() {
+                RcDoc::space().append(RcDoc::text("with").append(RcDoc::space()).append(
+                    parenthenized(comma_separated(with_hints.into_iter().map(transform_expr))),
+                ))
+            } else {
+                RcDoc::nil()
+            }),
         TableFactor::Derived {
             lateral,
             subquery,
             alias,
         } => RcDoc::text(if lateral { "lateral " } else { "" })
             .append(parenthenized(transform_query(*subquery)).append(transform_alias(alias))),
-        // TODO: handle other `TableFactor` variants.
-        _ => RcDoc::text(relation.to_string()),
+        TableFactor::NestedJoin(box TableWithJoins { relation, joins }) => {
+            transform_relation(relation)
+                .append(RcDoc::concat(joins.into_iter().map(transform_join)))
+        }
     }
 }
 
