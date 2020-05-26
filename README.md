@@ -53,7 +53,7 @@ select * from users;
 To format a SQL file, simply give `forma` the file path.
 
 ```
-$ forma < path/to/some/sql/example.sql
+$ forma path/to/some/sql/example.sql
 ```
 
 And if you'd prefer to not actually format the SQL but know if formatting
