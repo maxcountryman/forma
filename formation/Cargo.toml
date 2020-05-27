@@ -2,6 +2,10 @@
 name = "formation"
 version = "0.1.0"
 authors = ["Max Countryman <maxc@me.com>"]
+homepage = "https://github.com/maxcountryman/forma"
+repository = "https://github.com/maxcountryman/forma"
+documentation = "https://docs.rs/formation"
+readme = "../README.md"
 edition = "2018"
 description = "An opinionated SQL formatter."
 license = "MIT"

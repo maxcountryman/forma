@@ -2,10 +2,13 @@
 name = "forma"
 version = "0.1.0"
 authors = ["Max Countryman <maxc@me.com>"]
+homepage = "https://github.com/maxcountryman/forma"
+repository = "https://github.com/maxcountryman/forma"
+readme = "../README.md"
 edition = "2018"
 description = "An opinionated SQL formatter."
 license = "MIT"
 
 [dependencies]
-formation = { path = "../formation" }
+formation = { path = "../formation", version = "0.1.0" }
 structopt = "0.3.14"
