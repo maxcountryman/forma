@@ -17,21 +17,21 @@ fn fixture_paths(name: &str) -> (String, String) {
 
 #[rstest(
     fixture_paths,
-    case(fixture_paths("between")),
-    case(fixture_paths("case")),
-    case(fixture_paths("correlated_subquery")),
-    case(fixture_paths("ctes")),
-    case(fixture_paths("evaluation_order")),
-    case(fixture_paths("group_by")),
-    case(fixture_paths("inner_join")),
-    case(fixture_paths("natural_join")),
-    case(fixture_paths("null")),
-    case(fixture_paths("outer_join")),
-    case(fixture_paths("simple")),
-    case(fixture_paths("subquery")),
-    case(fixture_paths("join_using")),
-    case(fixture_paths("values")),
-    case(fixture_paths("window_function"))
+    case::between(fixture_paths("between")),
+    case::case(fixture_paths("case")),
+    case::correlated_subquery(fixture_paths("correlated_subquery")),
+    case::ctes(fixture_paths("ctes")),
+    case::evaluation_order(fixture_paths("evaluation_order")),
+    case::group_by(fixture_paths("group_by")),
+    case::inner_join(fixture_paths("inner_join")),
+    case::natural_join(fixture_paths("natural_join")),
+    case::null(fixture_paths("null")),
+    case::outer_join(fixture_paths("outer_join")),
+    case::simple(fixture_paths("simple")),
+    case::subquery(fixture_paths("subquery")),
+    case::join_using(fixture_paths("join_using")),
+    case::values(fixture_paths("values")),
+    case::window_function(fixture_paths("window_function"))
 )]
 fn test_format(fixture_paths: (String, String)) {
     let (input_path, expected_path) = fixture_paths;
