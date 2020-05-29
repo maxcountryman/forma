@@ -298,13 +298,18 @@ fn transform_join<'a>(join: Join) -> RcDoc<'a, ()> {
 
     fn suffix<'a>(constraint: &JoinConstraint) -> RcDoc<'a, ()> {
         match constraint.clone() {
-            JoinConstraint::On(expr) => RcDoc::space()
-                .append(RcDoc::text("on").append(RcDoc::space().append(transform_expr(expr)))),
-            JoinConstraint::Using(attrs) => {
-                RcDoc::space().append(RcDoc::text("using").append(RcDoc::space()).append(
-                    parenthenized(comma_separated(attrs.into_iter().map(RcDoc::text))),
-                ))
-            }
+            JoinConstraint::On(expr) => RcDoc::line()
+                .append(RcDoc::text("on").append(RcDoc::space().append(transform_expr(expr))))
+                .group(),
+            JoinConstraint::Using(attrs) => RcDoc::line()
+                .append(
+                    RcDoc::text("using")
+                        .append(RcDoc::space())
+                        .append(parenthenized(comma_separated(
+                            attrs.into_iter().map(RcDoc::text),
+                        ))),
+                )
+                .group(),
             _ => RcDoc::nil(),
         }
     }
