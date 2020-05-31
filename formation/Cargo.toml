@@ -9,6 +9,7 @@ readme = "../README.md"
 edition = "2018"
 description = "An opinionated SQL formatter."
 license = "MIT"
+keywords = ["sql", "formatter", "sql-formatter", "pretty-printer"]
 
 [dependencies]
 sqlparser = "0.5.0"

@@ -8,6 +8,7 @@ readme = "../README.md"
 edition = "2018"
 description = "An opinionated SQL formatter."
 license = "MIT"
+keywords = ["sql", "formatter", "sql-formatter", "pretty-printer"]
 
 [dependencies]
 formation = { path = "../formation", version = "0.1.2" }
