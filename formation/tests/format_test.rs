@@ -19,6 +19,7 @@ fn fixture_paths(name: &str) -> (String, String) {
     fixture_paths,
     case::between(fixture_paths("between")),
     case::case(fixture_paths("case")),
+    case::cast(fixture_paths("cast")),
     case::correlated_subquery(fixture_paths("correlated_subquery")),
     case::ctes(fixture_paths("ctes")),
     case::evaluation_order(fixture_paths("evaluation_order")),
