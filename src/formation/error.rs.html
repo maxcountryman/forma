@@ -34,32 +34,32 @@
 <span class="doccomment">//!</span>
 <span class="doccomment">//! Provides a custom error enum representing different errors the formatter can encounter.</span>
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">io</span>;
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">string</span>::<span class="ident">FromUtf8Error</span>;
+
+<span class="kw">use</span> <span class="ident">sqlparser</span>::<span class="ident">parser</span>::<span class="ident">ParserError</span>;
+<span class="kw">use</span> <span class="ident">thiserror</span>::<span class="ident">Error</span>;
 
 <span class="doccomment">/// An alias for a `std::result::Result` that pins `FormaError`.</span>
 <span class="kw">pub</span> <span class="kw">type</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">std</span>::<span class="ident">result</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">FormaError</span><span class="op">&gt;</span>;
 
 <span class="doccomment">/// Forma error type.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Error</span>, <span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">FormaError</span> {
     <span class="doccomment">/// Unable to parse given input as SQL.</span>
-    <span class="ident">InvalidInput</span>,
-    <span class="doccomment">/// Formatting would occur, i.e. when `check` is `true`.</span>
-    <span class="ident">WouldFormat</span>,
-    <span class="doccomment">/// A transformation failure that wraps `io::Error`.</span>
-    <span class="ident">TransformationFailure</span>(<span class="ident">io</span>::<span class="ident">Error</span>),
-    <span class="doccomment">/// A UTF-8 failure.</span>
-    <span class="ident">Utf8Failure</span>,
-}
+    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Invalid SQL provided as input&quot;</span>)]</span>
+    <span class="ident">InvalidInput</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">ParserError</span>),
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">FormaError</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">io</span>::<span class="ident">Error</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">error</span>: <span class="ident">FormaError</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="kw">match</span> <span class="ident">error</span> {
-            <span class="ident">FormaError</span>::<span class="ident">InvalidInput</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>, <span class="string">&quot;&quot;</span>),
-            <span class="ident">FormaError</span>::<span class="ident">Utf8Failure</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>, <span class="string">&quot;&quot;</span>),
-            <span class="ident">FormaError</span>::<span class="ident">WouldFormat</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidData</span>, <span class="string">&quot;&quot;</span>),
-            <span class="ident">FormaError</span>::<span class="ident">TransformationFailure</span>(<span class="ident">err</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">err</span>,
-        }
-    }
+    <span class="doccomment">/// Formatting would occur, i.e. when `check` is `true`.</span>
+    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Check failed; would format SQL&quot;</span>)]</span>
+    <span class="ident">WouldFormat</span>,
+
+    <span class="doccomment">/// A transformation failure that wraps `io::Error`.</span>
+    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Transformation did not succeed&quot;</span>)]</span>
+    <span class="ident">TransformationFailure</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">io</span>::<span class="ident">Error</span>),
+
+    <span class="doccomment">/// A UTF-8 failure.</span>
+    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;A UTF8 error occurred&quot;</span>)]</span>
+    <span class="ident">Utf8Failure</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">FromUtf8Error</span>),
 }
 </pre></div>
 </section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "formation";</script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>

@@ -674,10 +674,8 @@
 <span id="674">674</span>
 <span id="675">675</span>
 <span id="676">676</span>
-<span id="677">677</span>
-<span id="678">678</span>
 </pre><div class="example-wrap"><pre class="rust ">
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">error</span>::{<span class="self">self</span>, <span class="ident">FormaError</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">error</span>;
 <span class="kw">use</span> <span class="ident">pretty</span>::<span class="ident">RcDoc</span>;
 <span class="kw">use</span> <span class="ident">sqlparser</span>::<span class="ident">ast</span>::{
     <span class="ident">BinaryOperator</span>, <span class="ident">Cte</span>, <span class="ident">Expr</span>, <span class="ident">Fetch</span>, <span class="ident">Function</span>, <span class="ident">Join</span>, <span class="ident">JoinConstraint</span>, <span class="ident">JoinOperator</span>, <span class="ident">OrderByExpr</span>,
@@ -1316,10 +1314,8 @@
 <span class="doccomment">/// Renders the `Statement` in accordance with the provided maximum width.</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">render_statement</span>(<span class="ident">statement</span>: <span class="ident">Statement</span>, <span class="ident">max_width</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">error</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bs</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">new</span>();
-    <span class="ident">transform_statement</span>(<span class="ident">statement</span>)
-        .<span class="ident">render</span>(<span class="ident">max_width</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">bs</span>)
-        .<span class="ident">map_err</span>(<span class="ident">FormaError</span>::<span class="ident">TransformationFailure</span>)<span class="question-mark">?</span>;
-    <span class="ident">String</span>::<span class="ident">from_utf8</span>(<span class="ident">bs</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">FormaError</span>::<span class="ident">Utf8Failure</span>)
+    <span class="ident">transform_statement</span>(<span class="ident">statement</span>).<span class="ident">render</span>(<span class="ident">max_width</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">bs</span>)<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(<span class="ident">String</span>::<span class="ident">from_utf8</span>(<span class="ident">bs</span>)<span class="question-mark">?</span>)
 }
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
