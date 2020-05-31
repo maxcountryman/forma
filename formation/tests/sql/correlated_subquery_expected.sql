@@ -1,7 +1,5 @@
 select
-  salesid,
-  listid,
-  sum(pricepaid)
+  salesid, listid, sum(pricepaid)
 from
   sales as s
 where
