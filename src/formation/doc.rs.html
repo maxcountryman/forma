@@ -745,9 +745,9 @@
                 })
                 .<span class="ident">append</span>(<span class="ident">transform_expr</span>(<span class="kw-2">*</span><span class="ident">right</span>))
         }
-        <span class="ident">Expr</span>::<span class="ident">UnaryOp</span> { <span class="ident">expr</span>, <span class="ident">op</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">RcDoc</span>::<span class="ident">text</span>(<span class="ident">op</span>.<span class="ident">to_string</span>().<span class="ident">to_lowercase</span>())
-            .<span class="ident">append</span>(<span class="ident">RcDoc</span>::<span class="ident">space</span>())
-            .<span class="ident">append</span>(<span class="ident">transform_expr</span>(<span class="kw-2">*</span><span class="ident">expr</span>)),
+        <span class="ident">Expr</span>::<span class="ident">UnaryOp</span> { <span class="ident">expr</span>, <span class="ident">op</span> } <span class="op">=</span><span class="op">&gt;</span> {
+            <span class="ident">RcDoc</span>::<span class="ident">text</span>(<span class="ident">op</span>.<span class="ident">to_string</span>().<span class="ident">to_lowercase</span>()).<span class="ident">append</span>(<span class="ident">transform_expr</span>(<span class="kw-2">*</span><span class="ident">expr</span>))
+        }
         <span class="ident">Expr</span>::<span class="ident">Cast</span> { <span class="ident">expr</span>, <span class="ident">data_type</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">RcDoc</span>::<span class="ident">text</span>(<span class="string">&quot;cast&quot;</span>)
             .<span class="ident">append</span>(<span class="ident">RcDoc</span>::<span class="ident">text</span>(<span class="string">&quot;(&quot;</span>))
             .<span class="ident">append</span>(
