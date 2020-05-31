@@ -1,4 +1,4 @@
-use crate::error::{self, FormaError};
+use crate::error;
 use pretty::RcDoc;
 use sqlparser::ast::{
     BinaryOperator, Cte, Expr, Fetch, Function, Join, JoinConstraint, JoinOperator, OrderByExpr,
@@ -637,10 +637,8 @@ fn transform_statement<'a>(statement: Statement) -> RcDoc<'a, ()> {
 /// Renders the `Statement` in accordance with the provided maximum width.
 pub fn render_statement(statement: Statement, max_width: usize) -> error::Result<String> {
     let mut bs = Vec::new();
-    transform_statement(statement)
-        .render(max_width, &mut bs)
-        .map_err(FormaError::TransformationFailure)?;
-    String::from_utf8(bs).map_err(|_| FormaError::Utf8Failure)
+    transform_statement(statement).render(max_width, &mut bs)?;
+    Ok(String::from_utf8(bs)?)
 }
 
 #[cfg(test)]
