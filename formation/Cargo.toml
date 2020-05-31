@@ -1,6 +1,6 @@
 [package]
 name = "formation"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Max Countryman <maxc@me.com>"]
 homepage = "https://github.com/maxcountryman/forma"
 repository = "https://github.com/maxcountryman/forma"

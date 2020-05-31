@@ -34,7 +34,7 @@ $ cargo install forma
 Further the companion library `formation` may be required as a dependency:
 
 ```toml
-formation = "0.1.1"
+formation = "0.1.2"
 ```
 
 ## 🤸 Usage
