@@ -22,6 +22,7 @@ fn fixture_paths(name: &str) -> (String, String) {
     case::cast(fixture_paths("cast")),
     case::correlated_subquery(fixture_paths("correlated_subquery")),
     case::ctes(fixture_paths("ctes")),
+    case::date(fixture_paths("date")),
     case::evaluation_order(fixture_paths("evaluation_order")),
     case::group_by(fixture_paths("group_by")),
     case::inner_join(fixture_paths("inner_join")),
@@ -31,6 +32,8 @@ fn fixture_paths(name: &str) -> (String, String) {
     case::outer_join(fixture_paths("outer_join")),
     case::simple(fixture_paths("simple")),
     case::subquery(fixture_paths("subquery")),
+    case::time(fixture_paths("time")),
+    case::timestamp(fixture_paths("timestamp")),
     case::unary(fixture_paths("unary")),
     case::values(fixture_paths("values")),
     case::window_function(fixture_paths("window_function"))
