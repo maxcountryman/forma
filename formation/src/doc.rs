@@ -86,6 +86,7 @@ fn transform_expr<'a>(expr: Expr) -> RcDoc<'a, ()> {
                 transform_expr(*expr)
                     .append(RcDoc::space())
                     .append(RcDoc::text("as"))
+                    .append(RcDoc::space())
                     .append(RcDoc::text(data_type.to_string().to_lowercase())),
             )
             .append(RcDoc::text(")")),
