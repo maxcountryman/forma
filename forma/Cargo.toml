@@ -12,3 +12,4 @@ license = "MIT"
 [dependencies]
 formation = { path = "../formation", version = "0.1.2" }
 structopt = "0.3.14"
+anyhow = "1.0.31"

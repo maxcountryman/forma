@@ -56,8 +56,7 @@ fn format_statement(
 /// ```
 pub fn format(sql_string: String, check: bool, max_width: usize) -> error::Result<Vec<String>> {
     let dialect = TemplatedDialect {};
-    let statements =
-        Parser::parse_sql(&dialect, sql_string.clone()).map_err(|_| FormaError::InvalidInput)?;
+    let statements = Parser::parse_sql(&dialect, sql_string.clone())?;
     let mut pretty_statements: Vec<String> = vec![];
 
     for statement in statements {

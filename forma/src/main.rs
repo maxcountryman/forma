@@ -15,9 +15,10 @@
 use std::fs;
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
-use structopt::StructOpt;
 
+use anyhow::Result;
 use formation::format;
+use structopt::StructOpt;
 
 const DEFAULT_MAX_WIDTH: &str = "100";
 
@@ -38,16 +39,18 @@ struct Opt {
 }
 
 /// Given a writer, writes the given formatted buffers.
-fn write_formatted<W: Write>(mut writer: W, formatted: Vec<String>) -> io::Result<()> {
+fn write_formatted<W: Write>(mut writer: W, formatted: Vec<String>) -> Result<()> {
     writer.write_all(
         &formatted
             .iter()
             .flat_map(|ps| ps.as_bytes().to_owned())
             .collect::<Vec<u8>>()[..],
-    )
+    )?;
+    Ok(())
 }
 
-fn main() -> io::Result<()> {
+/// Main entrypoint for the `forma` binary.
+fn main() -> Result<()> {
     let Opt {
         input,
         check,
