@@ -2,7 +2,7 @@ use crate::error::{self, FormaError};
 use pretty::RcDoc;
 use sqlparser::ast::{
     BinaryOperator, Cte, Expr, Fetch, Function, Join, JoinConstraint, JoinOperator, OrderByExpr,
-    Query, Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, TableWithJoins,
+    Query, Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, TableWithJoins, Value,
     WindowFrame, WindowSpec,
 };
 
@@ -52,6 +52,17 @@ fn transform_select_item<'a>(select_item: SelectItem) -> RcDoc<'a, ()> {
         SelectItem::UnnamedExpr(expr) => transform_expr(expr),
         SelectItem::QualifiedWildcard(object_name) => RcDoc::text(object_name.to_string()),
         SelectItem::Wildcard => RcDoc::text("*"),
+    }
+}
+
+fn transform_value<'a>(value: Value) -> RcDoc<'a, ()> {
+    match value {
+        Value::Date(d) => RcDoc::text(format!("date '{}'", d)),
+        Value::Time(t) => RcDoc::text(format!("time '{}'", t)),
+        Value::Timestamp(ts) => RcDoc::text(format!("timestamp '{}'", ts)),
+        Value::Null => RcDoc::text("null"),
+        // TODO: Interval handling does not work for Redshift.
+        _ => RcDoc::text(value.to_string()),
     }
 }
 
@@ -111,7 +122,7 @@ fn transform_expr<'a>(expr: Expr) -> RcDoc<'a, ()> {
             .nest(2)
             .append(RcDoc::softline_())
             .append(RcDoc::text(")")),
-        Expr::Value(value) => RcDoc::text(value.to_string()),
+        Expr::Value(value) => transform_value(value),
         Expr::InSubquery {
             expr,
             negated,
