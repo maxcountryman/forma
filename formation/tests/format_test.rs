@@ -25,12 +25,13 @@ fn fixture_paths(name: &str) -> (String, String) {
     case::evaluation_order(fixture_paths("evaluation_order")),
     case::group_by(fixture_paths("group_by")),
     case::inner_join(fixture_paths("inner_join")),
+    case::join_using(fixture_paths("join_using")),
     case::natural_join(fixture_paths("natural_join")),
     case::null(fixture_paths("null")),
     case::outer_join(fixture_paths("outer_join")),
     case::simple(fixture_paths("simple")),
     case::subquery(fixture_paths("subquery")),
-    case::join_using(fixture_paths("join_using")),
+    case::unary(fixture_paths("unary")),
     case::values(fixture_paths("values")),
     case::window_function(fixture_paths("window_function"))
 )]

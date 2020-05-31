@@ -77,9 +77,9 @@ fn transform_expr<'a>(expr: Expr) -> RcDoc<'a, ()> {
                 })
                 .append(transform_expr(*right))
         }
-        Expr::UnaryOp { expr, op } => RcDoc::text(op.to_string().to_lowercase())
-            .append(RcDoc::space())
-            .append(transform_expr(*expr)),
+        Expr::UnaryOp { expr, op } => {
+            RcDoc::text(op.to_string().to_lowercase()).append(transform_expr(*expr))
+        }
         Expr::Cast { expr, data_type } => RcDoc::text("cast")
             .append(RcDoc::text("("))
             .append(
