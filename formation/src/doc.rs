@@ -80,7 +80,7 @@ fn transform_expr<'a>(expr: Expr) -> RcDoc<'a, ()> {
             let op_string = op.to_string().to_lowercase();
             transform_expr(*left)
                 .append(if is_newline_op(&op) {
-                    RcDoc::hardline()
+                    RcDoc::line()
                         .append(RcDoc::text(op_string))
                         .append(RcDoc::space())
                 } else {
@@ -327,9 +327,9 @@ fn transform_join<'a>(join: Join) -> RcDoc<'a, ()> {
     }
 
     match join.join_operator {
-        JoinOperator::Inner(constraint) => prefix(&constraint).append(RcDoc::text("join")).append(
+        JoinOperator::Inner(constraint) => prefix(&constraint).append(RcDoc::text("join").append(
             RcDoc::space().append(transform_relation(join.relation).append(suffix(&constraint))),
-        ),
+        )),
         JoinOperator::LeftOuter(constraint) => prefix(&constraint).append(
             RcDoc::text("left join").append(
                 RcDoc::space()
@@ -431,67 +431,71 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
             having,
             group_by,
         }) => {
-            RcDoc::text("select")
-                .append(if distinct {
-                    RcDoc::space().append(RcDoc::text("disinct"))
-                } else {
-                    RcDoc::nil()
-                })
-                .append(RcDoc::line())
-                .append(comma_separated(
-                    projection.into_iter().map(transform_select_item),
-                ))
-                .nest(2)
-                // From.
-                .append(if !from.is_empty() {
-                    RcDoc::line().append(RcDoc::text("from")).append(
-                        RcDoc::line().nest(2).append(
-                            comma_separated(from.into_iter().map(|table_with_joins| {
-                                let TableWithJoins { joins, relation } = table_with_joins;
+            if distinct {
+                RcDoc::text("select distinct")
+            } else {
+                RcDoc::text("select")
+            }
+            .append(
+                RcDoc::line().nest(2).append(
+                    comma_separated(projection.into_iter().map(transform_select_item))
+                        .nest(2)
+                        .group(),
+                ),
+            )
+            // From.
+            .append(if !from.is_empty() {
+                RcDoc::line().append(RcDoc::text("from")).append(
+                    RcDoc::line().nest(2).append(
+                        comma_separated(from.into_iter().map(
+                            |TableWithJoins { joins, relation }| {
                                 transform_relation(relation).append(if !joins.is_empty() {
-                                    RcDoc::hardline().append(RcDoc::intersperse(
+                                    RcDoc::line().append(RcDoc::intersperse(
                                         joins.into_iter().map(transform_join),
                                         RcDoc::line(),
                                     ))
                                 } else {
                                     RcDoc::nil()
                                 })
-                            }))
+                            },
+                        ))
+                        .nest(2)
+                        .group(),
+                    ),
+                )
+            } else {
+                RcDoc::nil()
+            })
+            // Selection.
+            .append(if let Some(selection) = selection {
+                RcDoc::line().append(RcDoc::text("where")).append(
+                    RcDoc::line()
+                        .nest(2)
+                        .append(transform_expr(selection).nest(2).group()),
+                )
+            } else {
+                RcDoc::nil()
+            })
+            // Group By.
+            .append(if !group_by.is_empty() {
+                RcDoc::line()
+                    .append(RcDoc::text("group by").append(RcDoc::line().nest(2)))
+                    .append(
+                        comma_separated(group_by.into_iter().map(transform_expr))
                             .nest(2)
                             .group(),
-                        ),
                     )
-                } else {
-                    RcDoc::nil()
-                })
-                // Selection.
-                .append(if let Some(selection) = selection {
-                    RcDoc::line()
-                        .append(RcDoc::text("where").append(RcDoc::line().nest(2)))
-                        .append(transform_expr(selection).nest(2))
-                } else {
-                    RcDoc::nil()
-                })
-                // Group By.
-                .append(if !group_by.is_empty() {
-                    RcDoc::line()
-                        .append(RcDoc::text("group by").append(RcDoc::line().nest(2)))
-                        .append(
-                            comma_separated(group_by.into_iter().map(transform_expr))
-                                .nest(2)
-                                .group(),
-                        )
-                } else {
-                    RcDoc::nil()
-                })
-                // Having.
-                .append(if let Some(having) = having {
-                    RcDoc::line()
-                        .append(RcDoc::text("having").append(RcDoc::line().nest(2)))
-                        .append(transform_expr(having))
-                } else {
-                    RcDoc::nil()
-                })
+            } else {
+                RcDoc::nil()
+            })
+            // Having.
+            .append(if let Some(having) = having {
+                RcDoc::line()
+                    .append(RcDoc::text("having").append(RcDoc::line().nest(2)))
+                    .append(transform_expr(having))
+            } else {
+                RcDoc::nil()
+            })
         }
 
         SetExpr::SetOperation {

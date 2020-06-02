@@ -1,8 +1,5 @@
 select
-  listid,
-  eventid,
-  sum(pricepaid) as revenue,
-  count(qtysold) as numtix
+  listid, eventid, sum(pricepaid) as revenue, count(qtysold) as numtix
 from
   sales
 group by

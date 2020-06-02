@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- All use of `hardline` has been removed and vertical space will be more
+aggressively conserved.
 - The `FormaError` type now uses `thiserror` and `forma` consumes this via
 `anyhow` for significantly more useful error messages.
 
