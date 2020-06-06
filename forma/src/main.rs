@@ -61,7 +61,7 @@ fn main() -> Result<()> {
         // `PathBuf` provided, so let's use that.
         Some(input) => {
             let sql_string = fs::read_to_string(&input)?;
-            let formatted = format(sql_string, check, max_width)?;
+            let formatted = format(&sql_string, check, max_width)?;
             let writer = fs::File::create(input)?;
             write_formatted(writer, formatted)
         }
@@ -70,7 +70,7 @@ fn main() -> Result<()> {
         None => {
             let mut sql_string = String::new();
             io::stdin().lock().read_to_string(&mut sql_string)?;
-            let formatted = format(sql_string, check, max_width)?;
+            let formatted = format(&sql_string, check, max_width)?;
             let writer = io::stdout();
             write_formatted(writer, formatted)
         }
