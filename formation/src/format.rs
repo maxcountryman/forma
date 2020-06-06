@@ -48,7 +48,7 @@ fn format_statement(
 ///
 /// ```
 /// use formation::format;
-/// let sql_string = "SELECT * FROM users;".to_owned();
+/// let sql_string = "SELECT * FROM users;";
 /// assert_eq!(
 ///     format(sql_string, false, 100).unwrap(),
 ///     vec!["select * from users;\n".to_owned()]
@@ -105,7 +105,7 @@ mod tests {
     fn test_format() {
         let sql_string = "select id from users where created_at > {{date}};".to_owned();
         assert_eq!(
-            format(sql_string, false, MAX_WIDTH).unwrap(),
+            format(&sql_string, false, MAX_WIDTH).unwrap(),
             vec!["select id from users where created_at > {{date}};\n".to_owned()]
         );
     }
