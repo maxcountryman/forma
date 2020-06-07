@@ -1,6 +1,6 @@
 [package]
 name = "forma"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["Max Countryman <maxc@me.com>"]
 homepage = "https://github.com/maxcountryman/forma"
 repository = "https://github.com/maxcountryman/forma"
@@ -11,7 +11,7 @@ license = "MIT"
 keywords = ["sql", "formatter", "sql-formatter", "pretty-printer"]
 
 [dependencies]
-formation = { path = "../formation", version = "0.1.2" }
+formation = { path = "../formation", version = "0.2.0" }
 structopt = "0.3.14"
 anyhow = "1.0.31"
 
