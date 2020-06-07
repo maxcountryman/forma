@@ -104,7 +104,7 @@ fn transform_expr<'a>(expr: Expr) -> RcDoc<'a, ()> {
         Expr::Extract { field, expr } => RcDoc::text("extract")
             .append(RcDoc::text("("))
             .append(
-                RcDoc::text(field.to_string())
+                RcDoc::text(field.to_string().to_lowercase())
                     .append(RcDoc::space())
                     .append(RcDoc::text("from"))
                     .append(RcDoc::space())

@@ -19,7 +19,7 @@ fn format_statement(
     check: bool,
     max_width: usize,
 ) -> error::Result<String> {
-    let pretty = render_statement(statement, max_width)?;
+    let pretty = format!("{};\n", render_statement(statement, max_width)?);
     if check && pretty != sql_string {
         Err(FormaError::WouldFormat)
     } else {
@@ -61,7 +61,7 @@ pub fn format(sql_string: &str, check: bool, max_width: usize) -> error::Result<
 
     for statement in statements {
         let pretty_statement = format_statement(sql_string, statement, check, max_width)?;
-        pretty_statements.push(format!("{};\n", pretty_statement));
+        pretty_statements.push(pretty_statement);
     }
 
     Ok(pretty_statements)
@@ -97,7 +97,7 @@ mod tests {
         }));
         assert_eq!(
             format_statement(sql_string, statement, false, MAX_WIDTH).unwrap(),
-            "select 42".to_owned()
+            "select 42;\n".to_owned()
         );
     }
 
@@ -108,5 +108,13 @@ mod tests {
             format(&sql_string, false, MAX_WIDTH).unwrap(),
             vec!["select id from users where created_at > {{date}};\n".to_owned()]
         );
+    }
+
+    #[test]
+    fn test_format_check() {
+        let sql_string = "select * from t1";
+        let result = format(sql_string, true, MAX_WIDTH);
+        dbg!(&result);
+        assert_eq!(result.is_err(), true);
     }
 }
