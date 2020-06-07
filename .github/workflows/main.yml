@@ -36,7 +36,6 @@ jobs:
       - run: cargo check --all
 
   test:
-    needs: [codestyle, lint, compile]
     runs-on: ubuntu-latest
 
     steps:
