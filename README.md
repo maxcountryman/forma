@@ -42,7 +42,7 @@ formation = "0.1.2"
 > ⚠️ `forma` should be considered alpha quality, with several known, and many
 more unknown deficiencies. **Use at your own risk!**
 
-Given `forma` some SQL via a file path or stdin and you'll get back formatted
+Give `forma` some SQL via a file path or stdin and you'll get back formatted
 SQL.
 
 ```
