@@ -4,20 +4,20 @@ use assert_cmd::Command;
 use tempfile::{self, NamedTempFile};
 
 #[test]
-fn cli_no_args() {
+fn forma_no_args() {
     let mut cmd = Command::cargo_bin("forma").unwrap();
     cmd.assert().success();
 }
 
 #[test]
-fn cli_stdin() {
+fn forma_stdin() {
     let mut cmd = Command::cargo_bin("forma").unwrap();
     let assert = cmd.write_stdin("SELECT * FROM t1").assert();
     assert.success().stdout("select * from t1;\n");
 }
 
 #[test]
-fn cli_file() {
+fn forma_file() {
     let mut example_sql = NamedTempFile::new().unwrap();
     write!(example_sql, "SELECT * FROM t1").unwrap();
     let mut cmd = Command::cargo_bin("forma").unwrap();
@@ -32,7 +32,7 @@ fn cli_file() {
 }
 
 #[test]
-fn cli_check() {
+fn forma_check() {
     let mut cmd = Command::cargo_bin("forma").unwrap();
     let assert = cmd.write_stdin("SELECT * FROM t1").arg("--check").assert();
     assert.failure().code(1);
