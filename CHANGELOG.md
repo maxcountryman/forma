@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- Ensure `field` is lower cased in `EXTRACT` handling.
 - Use `&str` instead of `String` which avoids unnecessary copying.
 (Thanks [@Dandandan](https://github.com/Dandandan)!)
 - All use of `hardline` has been removed and vertical space will be more
