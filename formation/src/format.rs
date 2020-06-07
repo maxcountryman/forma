@@ -14,7 +14,7 @@ use crate::doc::render_statement;
 use crate::error::{self, FormaError};
 
 fn format_statement(
-    sql_string: String,
+    sql_string: &str,
     statement: Statement,
     check: bool,
     max_width: usize,
@@ -48,19 +48,19 @@ fn format_statement(
 ///
 /// ```
 /// use formation::format;
-/// let sql_string = "SELECT * FROM users;".to_owned();
+/// let sql_string = "SELECT * FROM users;";
 /// assert_eq!(
 ///     format(sql_string, false, 100).unwrap(),
 ///     vec!["select * from users;\n".to_owned()]
 /// );
 /// ```
-pub fn format(sql_string: String, check: bool, max_width: usize) -> error::Result<Vec<String>> {
+pub fn format(sql_string: &str, check: bool, max_width: usize) -> error::Result<Vec<String>> {
     let dialect = TemplatedDialect {};
-    let statements = Parser::parse_sql(&dialect, sql_string.clone())?;
+    let statements = Parser::parse_sql(&dialect, sql_string.to_string())?;
     let mut pretty_statements: Vec<String> = vec![];
 
     for statement in statements {
-        let pretty_statement = format_statement(sql_string.clone(), statement, check, max_width)?;
+        let pretty_statement = format_statement(sql_string, statement, check, max_width)?;
         pretty_statements.push(format!("{};\n", pretty_statement));
     }
 
@@ -77,7 +77,7 @@ mod tests {
 
     #[test]
     fn test_format_statement() {
-        let sql_string = "SELECT 42;".to_owned();
+        let sql_string = "SELECT 42;";
         let statement = Statement::Query(Box::new(Query {
             body: SetExpr::Select(Box::new(Select {
                 distinct: false,
@@ -105,7 +105,7 @@ mod tests {
     fn test_format() {
         let sql_string = "select id from users where created_at > {{date}};".to_owned();
         assert_eq!(
-            format(sql_string, false, MAX_WIDTH).unwrap(),
+            format(&sql_string, false, MAX_WIDTH).unwrap(),
             vec!["select id from users where created_at > {{date}};\n".to_owned()]
         );
     }
