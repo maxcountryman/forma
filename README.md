@@ -10,6 +10,7 @@ An opinionated SQL formatter.
 <a href="https://github.com/maxcountryman/forma/actions">
 <img src="https://github.com/maxcountryman/forma/workflows/Main/badge.svg"/>
 </a>
+<a href='https://coveralls.io/github/maxcountryman/forma?branch=master'><img src='https://coveralls.io/repos/github/maxcountryman/forma/badge.svg?branch=master' alt='Coverage Status' /></a>
 <a href="https://crates.io/crates/forma">
 <img src="http://meritbadge.herokuapp.com/forma"/>
 </a>
