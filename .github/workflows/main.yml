@@ -94,9 +94,11 @@ jobs:
         with:
           rust-version: nightly
       - uses: actions/checkout@v1
-      - name: Publish
+      - name: Publish Formation
         shell: bash
         run: |
           cargo publish --token ${{ secrets.CRATES_TOKEN }} --manifest-path formation/Cargo.toml
-          sleep 5
+      - name: Publish Forma
+        shell: bash
+        run: |
           cargo publish --token ${{ secrets.CRATES_TOKEN }} --manifest-path forma/Cargo.toml
