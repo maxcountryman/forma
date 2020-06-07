@@ -14,3 +14,7 @@ keywords = ["sql", "formatter", "sql-formatter", "pretty-printer"]
 formation = { path = "../formation", version = "0.1.2" }
 structopt = "0.3.14"
 anyhow = "1.0.31"
+
+[dev-dependencies]
+assert_cmd = "1.0.1"
+tempfile = "3.1.0"
