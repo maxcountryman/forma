@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- Use `&str` instead of `String` which avoids unnecessary copying.
+(Thanks [@Dandandan](https://github.com/Dandandan)!)
 - All use of `hardline` has been removed and vertical space will be more
 aggressively conserved.
 - The `FormaError` type now uses `thiserror` and `forma` consumes this via
