@@ -39,9 +39,9 @@ struct Opt {
     max_width: usize,
 }
 
-/// Given a reader, writer, a check bool, and max width to format to, formats the reader's string
+/// Given a reader, a writer, a check bool, and max width to format to, formats the reader's string
 /// value and then writes the result via the writer.
-fn handler<R, W>(mut reader: R, mut writer: W, check: bool, max_width: usize) -> Result<()>
+fn formatter<R, W>(mut reader: R, mut writer: W, check: bool, max_width: usize) -> Result<()>
 where
     W: Write,
     R: BufRead,
@@ -66,13 +66,13 @@ fn main() -> Result<()> {
         max_width,
     } = Opt::from_args();
     match input {
-        Some(input) => handler(
+        Some(input) => formatter(
             BufReader::new(fs::File::open(&input)?),
             fs::File::with_options().write(true).open(input)?,
             check,
             max_width,
         ),
-        None => handler(io::stdin().lock(), io::stdout(), check, max_width),
+        None => formatter(io::stdin().lock(), io::stdout(), check, max_width),
     }
 }
 
@@ -81,10 +81,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_handler() -> Result<()> {
+    fn test_formatter() -> Result<()> {
         let input = b"SELECT * FROM t1";
         let mut output = Vec::new();
-        handler(&input[..], &mut output, false, 100)?;
+        formatter(&input[..], &mut output, false, 100)?;
         let output = String::from_utf8(output)?;
         assert_eq!(output, "select * from t1;\n");
         Ok(())
