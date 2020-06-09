@@ -11,9 +11,10 @@
 //! [`formation`]: ../formation/index.html
 
 #![deny(clippy::all, missing_docs)]
+#![feature(with_options)]
 
 use std::fs;
-use std::io::{self, Read, Write};
+use std::io::{self, BufRead, BufReader, Write};
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -38,8 +39,16 @@ struct Opt {
     max_width: usize,
 }
 
-/// Given a writer, writes the given formatted buffers.
-fn write_formatted<W: Write>(mut writer: W, formatted: Vec<String>) -> Result<()> {
+/// Given a reader, a writer, a check bool, and max width to format to, formats the reader's string
+/// value and then writes the result via the writer.
+fn formatter<R, W>(mut reader: R, mut writer: W, check: bool, max_width: usize) -> Result<()>
+where
+    W: Write,
+    R: BufRead,
+{
+    let mut sql_string = String::new();
+    reader.read_to_string(&mut sql_string)?;
+    let formatted = format(&sql_string, check, max_width)?;
     writer.write_all(
         &formatted
             .iter()
@@ -56,23 +65,28 @@ fn main() -> Result<()> {
         check,
         max_width,
     } = Opt::from_args();
-
     match input {
-        // `PathBuf` provided, so let's use that.
-        Some(input) => {
-            let sql_string = fs::read_to_string(&input)?;
-            let formatted = format(&sql_string, check, max_width)?;
-            let writer = fs::File::create(input)?;
-            write_formatted(writer, formatted)
-        }
+        Some(input) => formatter(
+            BufReader::new(fs::File::open(&input)?),
+            fs::File::with_options().write(true).open(input)?,
+            check,
+            max_width,
+        ),
+        None => formatter(io::stdin().lock(), io::stdout(), check, max_width),
+    }
+}
 
-        // Otherwise use stdin and stdout.
-        None => {
-            let mut sql_string = String::new();
-            io::stdin().lock().read_to_string(&mut sql_string)?;
-            let formatted = format(&sql_string, check, max_width)?;
-            let writer = io::stdout();
-            write_formatted(writer, formatted)
-        }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_formatter() -> Result<()> {
+        let input = b"SELECT * FROM t1";
+        let mut output = Vec::new();
+        formatter(&input[..], &mut output, false, 100)?;
+        let output = String::from_utf8(output)?;
+        assert_eq!(output, "select * from t1;\n");
+        Ok(())
     }
 }
