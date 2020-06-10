@@ -31,6 +31,7 @@ fn fixture_paths(name: &str) -> (String, String) {
     case::inner_join(fixture_paths("inner_join")),
     case::join_using(fixture_paths("join_using")),
     case::natural_join(fixture_paths("natural_join")),
+    case::nested(fixture_paths("nested")),
     case::null(fixture_paths("null")),
     case::outer_join(fixture_paths("outer_join")),
     case::right_join(fixture_paths("right_join")),
