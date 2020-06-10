@@ -26,6 +26,7 @@ fn fixture_paths(name: &str) -> (String, String) {
     case::ctes(fixture_paths("ctes")),
     case::date(fixture_paths("date")),
     case::evaluation_order(fixture_paths("evaluation_order")),
+    case::exists(fixture_paths("exists")),
     case::extract(fixture_paths("extract")),
     case::full_join(fixture_paths("full_join")),
     case::group_by(fixture_paths("group_by")),
