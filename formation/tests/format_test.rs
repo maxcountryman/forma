@@ -20,6 +20,7 @@ fn fixture_paths(name: &str) -> (String, String) {
     case::between(fixture_paths("between")),
     case::case(fixture_paths("case")),
     case::cast(fixture_paths("cast")),
+    case::collate(fixture_paths("collate")),
     case::correlated_subquery(fixture_paths("correlated_subquery")),
     case::cross_join(fixture_paths("cross_join")),
     case::ctes(fixture_paths("ctes")),
