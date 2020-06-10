@@ -23,7 +23,7 @@ use structopt::StructOpt;
 
 const DEFAULT_MAX_WIDTH: &str = "100";
 
-#[derive(StructOpt)]
+#[derive(Debug, PartialEq, StructOpt)]
 #[structopt(name = "forma", about = "🐚 An opinionated SQL formatter.")]
 struct Opt {
     /// A SQL input to format; either a file path or stdin.
@@ -78,6 +78,8 @@ fn main() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
 
     #[test]
@@ -88,5 +90,25 @@ mod tests {
         let output = String::from_utf8(output)?;
         assert_eq!(output, "select * from t1;\n");
         Ok(())
+    }
+
+    #[test]
+    fn test_opt() {
+        assert_eq!(
+            Opt::from_iter(&["test"]),
+            Opt {
+                input: None,
+                check: false,
+                max_width: DEFAULT_MAX_WIDTH.parse::<usize>().unwrap()
+            }
+        );
+        assert_eq!(
+            Opt::from_iter(&["test", "some/sql/path.sql"]),
+            Opt {
+                input: Some(PathBuf::from_str("some/sql/path.sql").unwrap()),
+                check: false,
+                max_width: DEFAULT_MAX_WIDTH.parse::<usize>().unwrap()
+            }
+        );
     }
 }
