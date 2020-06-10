@@ -30,6 +30,7 @@ fn fixture_paths(name: &str) -> (String, String) {
     case::extract(fixture_paths("extract")),
     case::full_join(fixture_paths("full_join")),
     case::group_by(fixture_paths("group_by")),
+    case::having(fixture_paths("having")),
     case::inner_join(fixture_paths("inner_join")),
     case::join_using(fixture_paths("join_using")),
     case::natural_join(fixture_paths("natural_join")),
