@@ -54,13 +54,13 @@ fn format_statement(
 ///     vec!["select * from users;\n".to_owned()]
 /// );
 /// ```
-pub fn format(sql_string: &str, check: bool, max_width: usize) -> error::Result<Vec<String>> {
+pub fn format(sql_str: &str, check: bool, max_width: usize) -> error::Result<Vec<String>> {
     let dialect = TemplatedDialect {};
-    let statements = Parser::parse_sql(&dialect, sql_string.to_string())?;
+    let statements = Parser::parse_sql(&dialect, sql_str)?;
     let mut pretty_statements: Vec<String> = vec![];
 
     for statement in statements {
-        let pretty_statement = format_statement(sql_string, statement, check, max_width)?;
+        let pretty_statement = format_statement(sql_str, statement, check, max_width)?;
         pretty_statements.push(pretty_statement);
     }
 
@@ -88,6 +88,7 @@ mod tests {
                     42.to_string(),
                 )))],
                 selection: None,
+                top: None,
             })),
             ctes: vec![],
             fetch: None,
