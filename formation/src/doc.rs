@@ -440,9 +440,9 @@ fn transform_top<'a>(top: Option<Top>) -> RcDoc<'a, ()> {
         let extension = if with_ties { " with ties" } else { "" };
         if let Some(quantity) = quantity {
             let percent = if percent { " percent" } else { "" };
-            RcDoc::text(format!("top ({}{}{})", quantity, percent, extension))
+            RcDoc::text(format!(" top ({}{}{})", quantity, percent, extension))
         } else {
-            RcDoc::text(format!("top{}", extension))
+            RcDoc::text(format!(" top{}", extension))
         }
     } else {
         RcDoc::nil()
