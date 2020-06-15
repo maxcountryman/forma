@@ -1,9 +1,9 @@
 use crate::error;
 use pretty::RcDoc;
 use sqlparser::ast::{
-    BinaryOperator, Cte, Expr, Fetch, Function, Join, JoinConstraint, JoinOperator, OrderByExpr,
-    Query, Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, TableWithJoins, Value,
-    WindowFrame, WindowSpec,
+    BinaryOperator, Cte, Expr, Fetch, Function, Ident, Join, JoinConstraint, JoinOperator, ListAgg,
+    ListAggOnOverflow, Offset, OffsetRows, OrderByExpr, Query, Select, SelectItem, SetExpr,
+    Statement, TableAlias, TableFactor, TableWithJoins, Top, Value, WindowFrame, WindowSpec,
 };
 
 /// Returns `true` if the given `BinaryOperator` should create a newline,
@@ -48,34 +48,97 @@ fn transform_select_item<'a>(select_item: SelectItem) -> RcDoc<'a, ()> {
             .append(RcDoc::space())
             .append(RcDoc::text("as"))
             .append(RcDoc::space())
-            .append(RcDoc::text(alias)),
-        SelectItem::UnnamedExpr(expr) => transform_expr(expr),
+            .append(RcDoc::text(alias.to_string())),
         SelectItem::QualifiedWildcard(object_name) => RcDoc::text(object_name.to_string()),
+        SelectItem::UnnamedExpr(expr) => transform_expr(expr),
         SelectItem::Wildcard => RcDoc::text("*"),
     }
 }
 
 fn transform_value<'a>(value: Value) -> RcDoc<'a, ()> {
     match value {
-        Value::Date(d) => RcDoc::text(format!("date '{}'", d)),
-        Value::Time(t) => RcDoc::text(format!("time '{}'", t)),
-        Value::Timestamp(ts) => RcDoc::text(format!("timestamp '{}'", ts)),
         Value::Null => RcDoc::text("null"),
         // TODO: Interval handling does not work for Redshift.
         _ => RcDoc::text(value.to_string()),
     }
 }
 
+fn transform_ident<'a>(ident: Ident) -> RcDoc<'a, ()> {
+    RcDoc::text(format!("{}", ident).to_lowercase())
+}
+
+fn transform_listagg<'a>(
+    ListAgg {
+        distinct,
+        expr,
+        separator,
+        on_overflow,
+        within_group,
+    }: ListAgg,
+) -> RcDoc<'a, ()> {
+    RcDoc::text("listagg")
+        .append(parenthenized(
+            if distinct {
+                RcDoc::text("distinct").append(RcDoc::space())
+            } else {
+                RcDoc::nil()
+            }
+            .append(transform_expr(*expr))
+            .append(if let Some(separator) = separator {
+                RcDoc::text(", ").append(transform_expr(*separator))
+            } else {
+                RcDoc::nil()
+            })
+            .append(if let Some(on_overflow) = on_overflow {
+                transform_listagg_on_overflow(on_overflow)
+            } else {
+                RcDoc::nil()
+            }),
+        ))
+        .append(if !within_group.is_empty() {
+            RcDoc::line().append(
+                RcDoc::text("within group (order by ")
+                    .append(comma_separated(
+                        within_group.into_iter().map(transform_order_by),
+                    ))
+                    .append(RcDoc::text(")")),
+            )
+        } else {
+            RcDoc::nil()
+        })
+}
+
+fn transform_listagg_on_overflow<'a>(on_overflow: ListAggOnOverflow) -> RcDoc<'a, ()> {
+    RcDoc::text(" on overflow").append(match on_overflow {
+        ListAggOnOverflow::Error => RcDoc::text(" error"),
+        ListAggOnOverflow::Truncate { filler, with_count } => RcDoc::text(" truncate")
+            .append(if let Some(filler) = filler {
+                RcDoc::space().append(transform_expr(*filler))
+            } else {
+                RcDoc::nil()
+            })
+            .append(if with_count {
+                RcDoc::text(" with count")
+            } else {
+                RcDoc::text(" without count")
+            }),
+    })
+}
+
 /// Transforms the given `Expr` into an `RcDoc`. If `expr` is `None`, returns
 /// a nil `RcDoc`.
 fn transform_expr<'a>(expr: Expr) -> RcDoc<'a, ()> {
     match expr {
-        Expr::Identifier(ident) => RcDoc::text(ident),
+        Expr::Identifier(ident) => transform_ident(ident),
         Expr::Wildcard => RcDoc::text("*"),
-        Expr::QualifiedWildcard(qualifiers) => {
-            RcDoc::intersperse(qualifiers, RcDoc::text(".")).append(RcDoc::text(".*"))
+        Expr::QualifiedWildcard(qualifiers) => RcDoc::intersperse(
+            qualifiers.into_iter().map(transform_ident),
+            RcDoc::text("."),
+        )
+        .append(RcDoc::text(".*")),
+        Expr::CompoundIdentifier(idents) => {
+            RcDoc::intersperse(idents.into_iter().map(transform_ident), RcDoc::text("."))
         }
-        Expr::CompoundIdentifier(idents) => RcDoc::intersperse(idents, RcDoc::text(".")),
         Expr::BinaryOp { left, op, right } => {
             let op_string = op.to_string().to_lowercase();
             transform_expr(*left)
@@ -123,6 +186,7 @@ fn transform_expr<'a>(expr: Expr) -> RcDoc<'a, ()> {
             .append(RcDoc::softline_())
             .append(RcDoc::text(")")),
         Expr::Value(value) => transform_value(value),
+        Expr::TypedString { data_type, value } => RcDoc::text(format!("{} '{}'", data_type, value)),
         Expr::InSubquery {
             expr,
             negated,
@@ -207,6 +271,7 @@ fn transform_expr<'a>(expr: Expr) -> RcDoc<'a, ()> {
         Expr::IsNotNull(expr) => transform_expr(*expr)
             .append(RcDoc::space())
             .append(RcDoc::text("is not null")),
+        Expr::ListAgg(listagg) => transform_listagg(listagg),
         Expr::Function(Function {
             name,
             args,
@@ -243,21 +308,9 @@ fn transform_expr<'a>(expr: Expr) -> RcDoc<'a, ()> {
                             .append(if !order_by.is_empty() {
                                 RcDoc::line_().append(
                                     RcDoc::text("order by").append(RcDoc::space()).append(
-                                        comma_separated(order_by.into_iter().map(
-                                            |OrderByExpr { expr, asc }| {
-                                                transform_expr(expr).append(
-                                                    if let Some(asc) = asc {
-                                                        RcDoc::space().append(if asc {
-                                                            RcDoc::text("asc")
-                                                        } else {
-                                                            RcDoc::text("desc")
-                                                        })
-                                                    } else {
-                                                        RcDoc::nil()
-                                                    },
-                                                )
-                                            },
-                                        )),
+                                        comma_separated(
+                                            order_by.into_iter().map(transform_order_by),
+                                        ),
                                     ),
                                 )
                             } else {
@@ -318,7 +371,7 @@ fn transform_join<'a>(join: Join) -> RcDoc<'a, ()> {
                     RcDoc::text("using")
                         .append(RcDoc::space())
                         .append(parenthenized(comma_separated(
-                            attrs.into_iter().map(RcDoc::text),
+                            attrs.into_iter().map(transform_ident),
                         ))),
                 )
                 .group(),
@@ -407,17 +460,51 @@ fn transform_relation<'a>(relation: TableFactor) -> RcDoc<'a, ()> {
     }
 }
 
-fn transform_order_by<'a>(order_by_expr: OrderByExpr) -> RcDoc<'a, ()> {
-    let OrderByExpr { expr, asc } = order_by_expr;
-    transform_expr(expr).append(if let Some(asc) = asc {
-        RcDoc::line().append(if asc {
-            RcDoc::text("asc")
+fn transform_order_by<'a>(
+    OrderByExpr {
+        expr,
+        asc,
+        nulls_first,
+    }: OrderByExpr,
+) -> RcDoc<'a, ()> {
+    transform_expr(expr)
+        .append(if let Some(asc) = asc {
+            RcDoc::line().append(if asc {
+                RcDoc::text("asc")
+            } else {
+                RcDoc::text("desc")
+            })
         } else {
-            RcDoc::text("desc")
+            RcDoc::nil()
         })
+        .append(if let Some(nulls_first) = nulls_first {
+            RcDoc::line().append(if nulls_first {
+                RcDoc::text("nulls first")
+            } else {
+                RcDoc::text("nulls last")
+            })
+        } else {
+            RcDoc::nil()
+        })
+}
+
+fn transform_top<'a>(top: Option<Top>) -> RcDoc<'a, ()> {
+    if let Some(Top {
+        with_ties,
+        percent,
+        quantity,
+    }) = top
+    {
+        let extension = if with_ties { " with ties" } else { "" };
+        if let Some(quantity) = quantity {
+            let percent = if percent { " percent" } else { "" };
+            RcDoc::text(format!(" top ({}{}{})", quantity, percent, extension))
+        } else {
+            RcDoc::text(format!(" top{}", extension))
+        }
     } else {
         RcDoc::nil()
-    })
+    }
 }
 
 /// Transforms the given `SetExpr` into an `RcDoc`.
@@ -430,12 +517,14 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
             distinct,
             having,
             group_by,
+            top,
         }) => {
             if distinct {
                 RcDoc::text("select distinct")
             } else {
                 RcDoc::text("select")
             }
+            .append(transform_top(top))
             .append(
                 RcDoc::line().nest(2).append(
                     comma_separated(projection.into_iter().map(transform_select_item))
@@ -528,16 +617,25 @@ fn transform_set_expr<'a>(set_expr: SetExpr) -> RcDoc<'a, ()> {
     }
 }
 
+fn transform_offset<'a>(Offset { value, rows }: Offset) -> RcDoc<'a, ()> {
+    RcDoc::text(format!("offset {}", value)).append(match rows {
+        OffsetRows::None => RcDoc::nil(),
+        OffsetRows::Row => RcDoc::text(" row"),
+        OffsetRows::Rows => RcDoc::text(" rows"),
+    })
+}
+
 /// Transforms the given `Query` into an `RcDoc`.
-fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
-    let Query {
+fn transform_query<'a>(
+    Query {
         body,
         order_by,
         limit,
         ctes,
         offset,
         fetch,
-    } = query;
+    }: Query,
+) -> RcDoc<'a, ()> {
     // CTEs.
     if !ctes.is_empty() {
         RcDoc::text("with")
@@ -579,13 +677,7 @@ fn transform_query<'a>(query: Query) -> RcDoc<'a, ()> {
     })
     // Offset.
     .append(if let Some(offset) = offset {
-        RcDoc::line().append(
-            RcDoc::text("offset")
-                .append(RcDoc::space())
-                .append(transform_expr(offset))
-                .append(RcDoc::space())
-                .append(RcDoc::text("rows")),
-        )
+        RcDoc::line().append(transform_offset(offset))
     } else {
         RcDoc::nil()
     })
@@ -665,6 +757,7 @@ mod tests {
                     42.to_string(),
                 )))],
                 selection: None,
+                top: None,
             })),
             ctes: vec![],
             fetch: None,
