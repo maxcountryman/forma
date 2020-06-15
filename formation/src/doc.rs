@@ -1,9 +1,9 @@
 use crate::error;
 use pretty::RcDoc;
 use sqlparser::ast::{
-    BinaryOperator, Cte, Expr, Fetch, Function, Ident, Join, JoinConstraint, JoinOperator, Offset,
-    OffsetRows, OrderByExpr, Query, Select, SelectItem, SetExpr, Statement, TableAlias,
-    TableFactor, TableWithJoins, Top, Value, WindowFrame, WindowSpec,
+    BinaryOperator, Cte, Expr, Fetch, Function, Ident, Join, JoinConstraint, JoinOperator, ListAgg,
+    ListAggOnOverflow, Offset, OffsetRows, OrderByExpr, Query, Select, SelectItem, SetExpr,
+    Statement, TableAlias, TableFactor, TableWithJoins, Top, Value, WindowFrame, WindowSpec,
 };
 
 /// Returns `true` if the given `BinaryOperator` should create a newline,
@@ -65,6 +65,64 @@ fn transform_value<'a>(value: Value) -> RcDoc<'a, ()> {
 
 fn transform_ident<'a>(ident: Ident) -> RcDoc<'a, ()> {
     RcDoc::text(format!("{}", ident).to_lowercase())
+}
+
+fn transform_listagg<'a>(
+    ListAgg {
+        distinct,
+        expr,
+        separator,
+        on_overflow,
+        within_group,
+    }: ListAgg,
+) -> RcDoc<'a, ()> {
+    RcDoc::text("listagg")
+        .append(parenthenized(
+            if distinct {
+                RcDoc::text("distinct").append(RcDoc::space())
+            } else {
+                RcDoc::nil()
+            }
+            .append(transform_expr(*expr))
+            .append(if let Some(separator) = separator {
+                RcDoc::text(", ").append(transform_expr(*separator))
+            } else {
+                RcDoc::nil()
+            })
+            .append(if let Some(on_overflow) = on_overflow {
+                transform_listagg_on_overflow(on_overflow)
+            } else {
+                RcDoc::nil()
+            }),
+        ))
+        .append(if !within_group.is_empty() {
+            RcDoc::line().append(
+                RcDoc::text("within group (order by ")
+                    .append(comma_separated(
+                        within_group.into_iter().map(transform_order_by),
+                    ))
+                    .append(RcDoc::text(")")),
+            )
+        } else {
+            RcDoc::nil()
+        })
+}
+
+fn transform_listagg_on_overflow<'a>(on_overflow: ListAggOnOverflow) -> RcDoc<'a, ()> {
+    RcDoc::text(" on overflow").append(match on_overflow {
+        ListAggOnOverflow::Error => RcDoc::text(" error"),
+        ListAggOnOverflow::Truncate { filler, with_count } => RcDoc::text(" truncate")
+            .append(if let Some(filler) = filler {
+                RcDoc::space().append(transform_expr(*filler))
+            } else {
+                RcDoc::nil()
+            })
+            .append(if with_count {
+                RcDoc::text(" with count")
+            } else {
+                RcDoc::text(" without count")
+            }),
+    })
 }
 
 /// Transforms the given `Expr` into an `RcDoc`. If `expr` is `None`, returns
@@ -213,7 +271,7 @@ fn transform_expr<'a>(expr: Expr) -> RcDoc<'a, ()> {
         Expr::IsNotNull(expr) => transform_expr(*expr)
             .append(RcDoc::space())
             .append(RcDoc::text("is not null")),
-        Expr::ListAgg(listagg) => RcDoc::text(listagg.to_string()),
+        Expr::ListAgg(listagg) => transform_listagg(listagg),
         Expr::Function(Function {
             name,
             args,
