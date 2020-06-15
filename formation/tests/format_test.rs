@@ -1,10 +1,12 @@
 extern crate formation;
 
 use std::fs;
-
-use rstest::rstest;
+use std::iter::FromIterator;
 
 use pretty_assertions::assert_eq;
+use rstest::rstest;
+
+use formation::error;
 
 const MAX_WIDTH: usize = 100;
 
@@ -38,6 +40,7 @@ fn fixture_paths(name: &str) -> (String, String) {
     case::nested(fixture_paths("nested")),
     case::not_null(fixture_paths("not_null")),
     case::null(fixture_paths("null")),
+    case::order_by(fixture_paths("order_by")),
     case::outer_join(fixture_paths("outer_join")),
     case::right_join(fixture_paths("right_join")),
     case::simple(fixture_paths("simple")),
@@ -49,13 +52,12 @@ fn fixture_paths(name: &str) -> (String, String) {
     case::values(fixture_paths("values")),
     case::window_function(fixture_paths("window_function"))
 )]
-fn test_format(fixture_paths: (String, String)) {
+fn test_format(fixture_paths: (String, String)) -> error::Result<()> {
     let (input_path, expected_path) = fixture_paths;
-    let sql_string = fs::read_to_string(input_path.clone())
-        .unwrap_or_else(|_| panic!("Could not load fixture input path: {}", input_path));
+    let sql_string = fs::read_to_string(input_path)?;
     assert_eq!(
-        formation::format(&sql_string, false, MAX_WIDTH).unwrap(),
-        vec![fs::read_to_string(expected_path.clone())
-            .unwrap_or_else(|_| panic!("Could not load fixture expected path: {}", expected_path))]
+        String::from_iter(formation::format(&sql_string, false, MAX_WIDTH)?),
+        fs::read_to_string(expected_path)?
     );
+    Ok(())
 }
