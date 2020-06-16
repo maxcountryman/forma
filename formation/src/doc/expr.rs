@@ -10,14 +10,6 @@ use crate::doc::common::{
 };
 use crate::doc::query::query_doc;
 
-pub fn exprs_doc<'a>(exprs: Exprs) -> FormaDoc<'a> {
-    if !exprs.is_empty() {
-        parenthenized(interweave_comma(exprs.into_iter().map(expr_doc)))
-    } else {
-        RcDoc::nil()
-    }
-}
-
 /// Returns a doc from the given `Expr`.
 pub fn expr_doc<'a>(expr: Expr) -> FormaDoc<'a> {
     match expr {
