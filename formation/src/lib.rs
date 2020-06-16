@@ -16,6 +16,7 @@
 #![deny(clippy::all, missing_docs)]
 #![feature(box_syntax, box_patterns)]
 
+mod constants;
 mod dialect;
 mod doc;
 pub mod error;
