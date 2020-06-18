@@ -48,19 +48,19 @@ fn format_statement(
 ///
 /// ```
 /// use formation::format;
-/// let sql_string = "SELECT * FROM users;";
+/// let sql = "SELECT * FROM users;";
 /// assert_eq!(
-///     format(sql_string, false, 100).unwrap(),
+///     format(sql, false, 100).unwrap(),
 ///     vec!["select * from users;\n".to_owned()]
 /// );
 /// ```
-pub fn format(sql_str: &str, check: bool, max_width: usize) -> error::Result<Vec<String>> {
+pub fn format(sql: &str, check: bool, max_width: usize) -> error::Result<Vec<String>> {
     let dialect = TemplatedDialect {};
-    let statements = Parser::parse_sql(&dialect, sql_str)?;
+    let statements = Parser::parse_sql(&dialect, sql)?;
     let mut pretty_statements: Vec<String> = vec![];
 
     for statement in statements {
-        let pretty_statement = format_statement(sql_str, statement, check, max_width)?;
+        let pretty_statement = format_statement(sql, statement, check, max_width)?;
         pretty_statements.push(pretty_statement);
     }
 

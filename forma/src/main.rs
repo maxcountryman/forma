@@ -46,9 +46,9 @@ where
     W: Write,
     R: BufRead,
 {
-    let mut sql_string = String::new();
-    reader.read_to_string(&mut sql_string)?;
-    let formatted = format(&sql_string, check, max_width)?;
+    let mut sql = String::new();
+    reader.read_to_string(&mut sql)?;
+    let formatted = format(&sql, check, max_width)?;
     writer.write_all(
         &formatted
             .iter()
