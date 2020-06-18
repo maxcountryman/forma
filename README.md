@@ -66,9 +66,9 @@ in your own applications to format SQL.
 
 ```rust
 use formation::format;
-let sql_string = "SELECT * FROM users;".to_owned();
+let sql = "SELECT * FROM users;";
 assert_eq!(
-    format(sql_string, false, 100).unwrap(),
+    format(sql, false, 100).unwrap(),
     vec!["select * from users;\n".to_owned()]
 );
 ```

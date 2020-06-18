@@ -4,13 +4,13 @@ mod expr;
 mod query;
 
 use crate::error;
-use pretty::RcDoc;
 use sqlparser::ast::Statement;
 
+use crate::doc::common::FormaDoc;
 use crate::doc::query::query_doc;
 
 /// Transforms the given `Statement` into an `RcDoc`.
-fn statement_doc<'a>(statement: Statement) -> RcDoc<'a, ()> {
+fn statement_doc<'a>(statement: Statement) -> FormaDoc<'a> {
     match statement {
         // Select statement.
         Statement::Query(query) => query_doc(*query),
