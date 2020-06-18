@@ -67,13 +67,13 @@
 <span class="kw">mod</span> <span class="ident">query</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">error</span>;
-<span class="kw">use</span> <span class="ident">pretty</span>::<span class="ident">RcDoc</span>;
 <span class="kw">use</span> <span class="ident">sqlparser</span>::<span class="ident">ast</span>::<span class="ident">Statement</span>;
 
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">doc</span>::<span class="ident">common</span>::<span class="ident">FormaDoc</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">doc</span>::<span class="ident">query</span>::<span class="ident">query_doc</span>;
 
 <span class="doccomment">/// Transforms the given `Statement` into an `RcDoc`.</span>
-<span class="kw">fn</span> <span class="ident">statement_doc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">statement</span>: <span class="ident">Statement</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">RcDoc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, ()<span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">statement_doc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">statement</span>: <span class="ident">Statement</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">FormaDoc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="kw">match</span> <span class="ident">statement</span> {
         <span class="comment">// Select statement.</span>
         <span class="ident">Statement</span>::<span class="ident">Query</span>(<span class="ident">query</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">query_doc</span>(<span class="kw-2">*</span><span class="ident">query</span>),

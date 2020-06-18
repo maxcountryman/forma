@@ -81,8 +81,8 @@
     <span class="ident">RcDoc</span>::<span class="ident">intersperse</span>(<span class="ident">docs</span>, <span class="ident">RcDoc</span>::<span class="ident">text</span>(<span class="string">&quot;,&quot;</span>).<span class="ident">append</span>(<span class="ident">RcDoc</span>::<span class="ident">line</span>()))
 }
 
-<span class="comment">// Surrounds the provided document with parenthesis.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parenthenized</span>(<span class="ident">doc</span>: <span class="ident">RcDoc</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, ()<span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">RcDoc</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, ()<span class="op">&gt;</span> {
+<span class="doccomment">/// Surrounds the provided document with parenthesis.</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">parenthenized</span>(<span class="ident">doc</span>: <span class="ident">FormaDoc</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">FormaDoc</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
     <span class="ident">RcDoc</span>::<span class="ident">text</span>(<span class="string">&quot;(&quot;</span>)
         .<span class="ident">append</span>(<span class="ident">RcDoc</span>::<span class="ident">line_</span>())
         .<span class="ident">append</span>(<span class="ident">doc</span>)
