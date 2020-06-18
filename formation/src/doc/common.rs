@@ -18,7 +18,7 @@ where
     RcDoc::intersperse(docs, RcDoc::text(",").append(RcDoc::line()))
 }
 
-// Surrounds the provided document with parenthesis.
+/// Surrounds the provided document with parenthesis.
 pub fn parenthenized(doc: FormaDoc<'_>) -> FormaDoc<'_> {
     RcDoc::text("(")
         .append(RcDoc::line_())
