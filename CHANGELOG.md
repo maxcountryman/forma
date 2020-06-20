@@ -5,17 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-
-## [0.3.0] - 2020-06-19
 ### Changed
 - Updated `sqlparser-rs` to an unreleased revision containing fixes for
 Postgres, e.g. better handling of intervals and dates.
-
-### Added
-- Support for formatting `LISTAGG` via upstream changes.
-- Better handling of columns named e.g. `date`, which are now supported
-`sqlparser-rs`.
-- Postgres interval syntax, again via `sqlparser-rs` upstream.
 
 ## [0.2.0] - 2020-06-07
 ### Changed
@@ -46,8 +38,7 @@ aggressively conserved.
 ### Added
 - Initial release: comprehensive formatting for `Query` nodes.
 
-[Unreleased]: https://github.com/maxcountryman/forma/compare/0.3.0...HEAD
-[0.3.0]: https://github.com/maxcountryman/forma/releases/tag/0.3.0
+[Unreleased]: https://github.com/maxcountryman/forma/compare/0.2.0...HEAD
 [0.2.0]: https://github.com/maxcountryman/forma/releases/tag/0.2.0
 [0.1.2]: https://github.com/maxcountryman/forma/releases/tag/0.1.2
 [0.1.1]: https://github.com/maxcountryman/forma/releases/tag/0.1.1
