@@ -32,6 +32,7 @@ fn fixture_paths(name: &str) -> (String, String) {
     case::extract(fixture_paths("extract")),
     case::fetch(fixture_paths("fetch")),
     case::full_join(fixture_paths("full_join")),
+    case::function(fixture_paths("function")),
     case::group_by(fixture_paths("group_by")),
     case::having(fixture_paths("having")),
     case::inner_join(fixture_paths("inner_join")),
