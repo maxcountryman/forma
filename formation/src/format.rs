@@ -14,13 +14,13 @@ use crate::doc::render_statement;
 use crate::error::{self, FormaError};
 
 fn format_statement(
-    sql_string: &str,
+    sql: &str,
     statement: Statement,
     check: bool,
     max_width: usize,
 ) -> error::Result<String> {
     let pretty = format!("{};\n", render_statement(statement, max_width)?);
-    if check && pretty != sql_string {
+    if check && pretty != sql {
         Err(FormaError::WouldFormat)
     } else {
         Ok(pretty)
