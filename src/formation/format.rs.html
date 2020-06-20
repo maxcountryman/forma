@@ -136,13 +136,13 @@
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">error</span>::{<span class="self">self</span>, <span class="ident">FormaError</span>};
 
 <span class="kw">fn</span> <span class="ident">format_statement</span>(
-    <span class="ident">sql_string</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
+    <span class="ident">sql</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
     <span class="ident">statement</span>: <span class="ident">Statement</span>,
     <span class="ident">check</span>: <span class="ident">bool</span>,
     <span class="ident">max_width</span>: <span class="ident">usize</span>,
 ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">error</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">pretty</span> <span class="op">=</span> <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{};\n&quot;</span>, <span class="ident">render_statement</span>(<span class="ident">statement</span>, <span class="ident">max_width</span>)<span class="question-mark">?</span>);
-    <span class="kw">if</span> <span class="ident">check</span> <span class="kw-2">&amp;</span><span class="op">&amp;</span> <span class="ident">pretty</span> <span class="op">!</span><span class="op">=</span> <span class="ident">sql_string</span> {
+    <span class="kw">if</span> <span class="ident">check</span> <span class="kw-2">&amp;</span><span class="op">&amp;</span> <span class="ident">pretty</span> <span class="op">!</span><span class="op">=</span> <span class="ident">sql</span> {
         <span class="prelude-val">Err</span>(<span class="ident">FormaError</span>::<span class="ident">WouldFormat</span>)
     } <span class="kw">else</span> {
         <span class="prelude-val">Ok</span>(<span class="ident">pretty</span>)
