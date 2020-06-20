@@ -178,7 +178,6 @@ fn extract_doc<'a>(field: DateTimeField, expr: Expr) -> FormaDoc<'a> {
         .append(RcDoc::text(")"))
 }
 
-// TODO: Break this up.
 fn function_doc<'a>(
     name: ObjectName,
     args: Exprs,
@@ -194,66 +193,66 @@ fn function_doc<'a>(
             }
             .append(interweave_comma(args.into_iter().map(expr_doc))),
         ))
-        .append(
-            if let Some(WindowSpec {
-                partition_by,
-                order_by,
-                window_frame,
-            }) = over
-            {
-                RcDoc::space().append(
-                    RcDoc::text("over").append(parenthenized(
-                        if !partition_by.is_empty() {
-                            RcDoc::text("partition by")
-                                .append(RcDoc::space())
-                                .append(interweave_comma(partition_by.into_iter().map(expr_doc)))
-                                .append(RcDoc::space())
-                        } else {
-                            RcDoc::nil()
-                        }
-                        .append(if !order_by.is_empty() {
-                            RcDoc::line_().append(
-                                RcDoc::text("order by").append(RcDoc::space()).append(
-                                    interweave_comma(order_by.into_iter().map(order_by_doc)),
-                                ),
-                            )
-                        } else {
-                            RcDoc::nil()
-                        })
-                        .append(
-                            if let Some(WindowFrame {
-                                units,
-                                start_bound,
-                                end_bound,
-                            }) = window_frame
-                            {
-                                RcDoc::line_().append(
-                                    RcDoc::text(units.to_string().to_lowercase())
-                                        .append(RcDoc::space())
-                                        .append(RcDoc::text("between"))
-                                        .append(RcDoc::space())
-                                        .append(start_bound.to_string().to_lowercase())
-                                        .append(if let Some(end_bound) = end_bound {
-                                            RcDoc::space()
-                                                .append(RcDoc::text("and"))
-                                                .append(RcDoc::space())
-                                                .append(RcDoc::text(
-                                                    end_bound.to_string().to_lowercase(),
-                                                ))
-                                        } else {
-                                            RcDoc::nil()
-                                        }),
-                                )
-                            } else {
-                                RcDoc::nil()
-                            },
-                        ),
-                    )),
-                )
-            } else {
-                RcDoc::nil()
-            },
+        .append(window_spec_doc(over))
+}
+
+fn window_spec_doc<'a>(window_spec: Option<WindowSpec>) -> FormaDoc<'a> {
+    if let Some(WindowSpec {
+        partition_by,
+        order_by,
+        window_frame,
+    }) = window_spec
+    {
+        RcDoc::space().append(
+            RcDoc::text("over").append(parenthenized(
+                if !partition_by.is_empty() {
+                    RcDoc::text("partition by")
+                        .append(RcDoc::space())
+                        .append(interweave_comma(partition_by.into_iter().map(expr_doc)))
+                        .append(RcDoc::space())
+                } else {
+                    RcDoc::nil()
+                }
+                .append(if !order_by.is_empty() {
+                    RcDoc::text("order by")
+                        .append(RcDoc::space())
+                        .append(interweave_comma(order_by.into_iter().map(order_by_doc)))
+                } else {
+                    RcDoc::nil()
+                })
+                .append(window_frame_doc(window_frame)),
+            )),
         )
+    } else {
+        RcDoc::nil()
+    }
+}
+
+fn window_frame_doc<'a>(window_frame: Option<WindowFrame>) -> FormaDoc<'a> {
+    if let Some(WindowFrame {
+        units,
+        start_bound,
+        end_bound,
+    }) = window_frame
+    {
+        RcDoc::line_().append(
+            RcDoc::text(units.to_string().to_lowercase())
+                .append(RcDoc::space())
+                .append(RcDoc::text("between"))
+                .append(RcDoc::space())
+                .append(start_bound.to_string().to_lowercase())
+                .append(if let Some(end_bound) = end_bound {
+                    RcDoc::space()
+                        .append(RcDoc::text("and"))
+                        .append(RcDoc::space())
+                        .append(RcDoc::text(end_bound.to_string().to_lowercase()))
+                } else {
+                    RcDoc::nil()
+                }),
+        )
+    } else {
+        RcDoc::nil()
+    }
 }
 
 fn in_list_doc<'a>(expr: Expr, negated: bool, list: Exprs) -> FormaDoc<'a> {
