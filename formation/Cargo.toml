@@ -12,7 +12,7 @@ license = "MIT"
 keywords = ["sql", "formatter", "sql-formatter", "pretty-printer"]
 
 [dependencies]
-sqlparser = { git = "https://github.com/andygrove/sqlparser-rs.git", rev = "b24dbe5"}
+sqlparser = "0.5.1"
 pretty = "0.10.0"
 thiserror = "1.0.19"
 

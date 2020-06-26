@@ -352,7 +352,7 @@ fn subquery_doc<'a>(query: Query) -> FormaDoc<'a> {
 }
 
 fn typed_string_doc<'a>(data_type: DataType, value: String) -> FormaDoc<'a> {
-    RcDoc::text(data_type.to_string())
+    RcDoc::text(data_type.to_string().to_lowercase())
         .append(RcDoc::space())
         .append(RcDoc::text(format!("'{}'", value)))
 }
