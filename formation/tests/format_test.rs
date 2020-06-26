@@ -36,6 +36,7 @@ fn fixture_paths(name: &str) -> (String, String) {
     case::group_by(fixture_paths("group_by")),
     case::having(fixture_paths("having")),
     case::inner_join(fixture_paths("inner_join")),
+    case::interval(fixture_paths("interval")),
     case::join_using(fixture_paths("join_using")),
     case::listagg(fixture_paths("listagg")),
     case::natural_join(fixture_paths("natural_join")),
