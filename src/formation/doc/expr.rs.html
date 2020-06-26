@@ -742,7 +742,7 @@
 }
 
 <span class="kw">fn</span> <span class="ident">typed_string_doc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">data_type</span>: <span class="ident">DataType</span>, <span class="ident">value</span>: <span class="ident">String</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">FormaDoc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="ident">RcDoc</span>::<span class="ident">text</span>(<span class="ident">data_type</span>.<span class="ident">to_string</span>())
+    <span class="ident">RcDoc</span>::<span class="ident">text</span>(<span class="ident">data_type</span>.<span class="ident">to_string</span>().<span class="ident">to_lowercase</span>())
         .<span class="ident">append</span>(<span class="ident">RcDoc</span>::<span class="ident">space</span>())
         .<span class="ident">append</span>(<span class="ident">RcDoc</span>::<span class="ident">text</span>(<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;&#39;{}&#39;&quot;</span>, <span class="ident">value</span>)))
 }
