@@ -36,7 +36,7 @@ Further the companion library `formation` may be required as a dependency:
 
 ```toml
 [dependencies]
-formation = "0.2.0"
+formation = "0.3.0"
 ```
 
 ## 🤸 Usage
