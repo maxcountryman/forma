@@ -1,3 +1,5 @@
+use std::fmt;
+
 use pretty::RcDoc;
 use sqlparser::ast::{Expr, Ident, OrderByExpr};
 
@@ -9,6 +11,25 @@ pub type FormaDoc<'a> = RcDoc<'a, ()>;
 pub type Idents = Vec<Ident>;
 
 pub type Exprs = Vec<Expr>;
+
+pub struct EscapeSingleQuoteString<'a>(&'a str);
+
+impl<'a> fmt::Display for EscapeSingleQuoteString<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for c in self.0.chars() {
+            if c == '\'' {
+                write!(f, "\'\'")?;
+            } else {
+                write!(f, "{}", c)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+pub fn escape_single_quote_string(s: &str) -> EscapeSingleQuoteString<'_> {
+    EscapeSingleQuoteString(s)
+}
 
 /// Interweaves the provides documents with a comma.
 pub fn interweave_comma<'a, D>(docs: D) -> FormaDoc<'a>

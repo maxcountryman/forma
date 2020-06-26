@@ -6,7 +6,8 @@ use sqlparser::ast::{
 
 use crate::constants::NEST_FACTOR;
 use crate::doc::common::{
-    ident_doc, interweave_comma, order_by_doc, parenthenized, Exprs, FormaDoc, Idents,
+    escape_single_quote_string, ident_doc, interweave_comma, order_by_doc, parenthenized, Exprs,
+    FormaDoc, Idents,
 };
 use crate::doc::query::query_doc;
 
@@ -364,7 +365,47 @@ fn unary_op_doc<'a>(op: UnaryOperator, expr: Expr) -> FormaDoc<'a> {
 fn value_doc<'a>(value: Value) -> FormaDoc<'a> {
     match value {
         Value::Null => RcDoc::text("null"),
-        // TODO: Interval handling does not work for Redshift.
+        Value::Interval {
+            value,
+            leading_field: Some(DateTimeField::Second),
+            leading_precision: Some(leading_precision),
+            last_field: _,
+            fractional_seconds_precision: Some(fractional_seconds_precision),
+        } => RcDoc::text(format!(
+            "interval '{}' second ({}, {})",
+            escape_single_quote_string(&value),
+            leading_precision,
+            fractional_seconds_precision
+        )),
+        Value::Interval {
+            value,
+            leading_field,
+            leading_precision,
+            last_field,
+            fractional_seconds_precision,
+        } => RcDoc::text(format!("interval '{}'", value))
+            .append(if let Some(leading_field) = leading_field {
+                RcDoc::text(format!(" {}", leading_field).to_lowercase())
+            } else {
+                RcDoc::nil()
+            })
+            .append(if let Some(leading_precision) = leading_precision {
+                RcDoc::text(format!(" ({})", leading_precision))
+            } else {
+                RcDoc::nil()
+            })
+            .append(if let Some(last_field) = last_field {
+                RcDoc::text(format!(" to {}", last_field).to_lowercase())
+            } else {
+                RcDoc::nil()
+            })
+            .append(
+                if let Some(fractional_seconds_precision) = fractional_seconds_precision {
+                    RcDoc::text(format!(" ({})", fractional_seconds_precision))
+                } else {
+                    RcDoc::nil()
+                },
+            ),
         _ => RcDoc::text(value.to_string()),
     }
 }
