@@ -7,10 +7,10 @@ An opinionated SQL formatter.
 </p>
 
 <div align="center">
-<a href="https://github.com/maxcountryman/forma/actions?query=branch%3Amaster+workflow%3AMain">
-<img src="https://github.com/maxcountryman/forma/workflows/Main/badge.svg?branch=master"/>
+<a href="https://github.com/maxcountryman/forma/actions?query=branch%3Amain+workflow%3AMain">
+<img src="https://github.com/maxcountryman/forma/workflows/Main/badge.svg?branch=main"/>
 </a>
-<a href='https://coveralls.io/github/maxcountryman/forma?branch=master'><img src='https://coveralls.io/repos/github/maxcountryman/forma/badge.svg?branch=master' alt='Coverage Status' /></a>
+<a href='https://coveralls.io/github/maxcountryman/forma?branch=master'><img src='https://coveralls.io/repos/github/maxcountryman/forma/badge.svg?branch=main' alt='Coverage Status' /></a>
 <a href="https://crates.io/crates/forma">
 <img src="http://meritbadge.herokuapp.com/forma"/>
 </a>
