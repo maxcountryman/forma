@@ -1,4 +1,4 @@
 (function() {var implementors = {};
-implementors["forma"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/marker/trait.Freeze.html\" title=\"trait core::marker::Freeze\">Freeze</a> for <a class=\"struct\" href=\"forma/struct.Opt.html\" title=\"struct forma::Opt\">Opt</a>","synthetic":true,"types":["forma::Opt"]}];
-implementors["formation"] = [{"text":"impl Freeze for <a class=\"enum\" href=\"formation/error/enum.FormaError.html\" title=\"enum formation::error::FormaError\">FormaError</a>","synthetic":true,"types":["formation::error::FormaError"]}];
+implementors["forma"] = [{"text":"impl Freeze for Opt","synthetic":true,"types":[]}];
+implementors["formation"] = [{"text":"impl Freeze for FormaError","synthetic":true,"types":[]}];
 if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
