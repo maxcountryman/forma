@@ -12,7 +12,7 @@ keywords = ["sql", "formatter", "sql-formatter", "pretty-printer"]
 
 [dependencies]
 formation = { path = "../formation", version = "0.3.0" }
-structopt = "0.3.16"
+structopt = "0.3.17"
 anyhow = "1.0.32"
 
 [dev-dependencies]
