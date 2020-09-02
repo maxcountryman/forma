@@ -138,7 +138,7 @@
         <span class="ident">offset</span>,
         <span class="ident">fetch</span>,
     }: <span class="ident">Query</span>,
-) <span class="op">-&gt;</span> <span class="ident">FormaDoc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">FormaDoc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="comment">// CTEs.</span>
     <span class="ident">ctes_doc</span>(<span class="ident">ctes</span>)
         <span class="comment">// Query body, e.g. `select * from t1 where x &gt; 1`.</span>
@@ -164,7 +164,7 @@
         .<span class="ident">group</span>()
 }
 
-<span class="kw">fn</span> <span class="ident">ctes_doc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">ctes</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Cte</span><span class="op">&gt;</span>) <span class="op">-&gt;</span> <span class="ident">FormaDoc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">ctes_doc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">ctes</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Cte</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">FormaDoc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="kw">if</span> <span class="op">!</span><span class="ident">ctes</span>.<span class="ident">is_empty</span>() {
         <span class="ident">RcDoc</span>::<span class="ident">text</span>(<span class="string">&quot;with&quot;</span>)
             .<span class="ident">append</span>(<span class="ident">RcDoc</span>::<span class="ident">space</span>())
@@ -183,7 +183,7 @@
     }
 }
 
-<span class="kw">fn</span> <span class="ident">limit_doc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">limit</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>) <span class="op">-&gt;</span> <span class="ident">FormaDoc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">limit_doc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">limit</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Expr</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">FormaDoc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">limit</span>) <span class="op">=</span> <span class="ident">limit</span> {
         <span class="ident">RcDoc</span>::<span class="ident">line</span>()
             .<span class="ident">append</span>(<span class="ident">RcDoc</span>::<span class="ident">text</span>(<span class="string">&quot;limit&quot;</span>).<span class="ident">append</span>(<span class="ident">RcDoc</span>::<span class="ident">line</span>().<span class="ident">nest</span>(<span class="ident">NEST_FACTOR</span>)))
@@ -193,19 +193,19 @@
     }
 }
 
-<span class="kw">fn</span> <span class="ident">offset_doc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">offset</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Offset</span><span class="op">&gt;</span>) <span class="op">-&gt;</span> <span class="ident">FormaDoc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">offset_doc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">offset</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Offset</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">FormaDoc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">Offset</span> { <span class="ident">value</span>, <span class="ident">rows</span> }) <span class="op">=</span> <span class="ident">offset</span> {
         <span class="ident">RcDoc</span>::<span class="ident">line</span>().<span class="ident">append</span>(<span class="ident">RcDoc</span>::<span class="ident">text</span>(<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;offset {}&quot;</span>, <span class="ident">value</span>)).<span class="ident">append</span>(<span class="kw">match</span> <span class="ident">rows</span> {
-            <span class="ident">OffsetRows</span>::<span class="prelude-val">None</span> <span class="op">=&gt;</span> <span class="ident">RcDoc</span>::<span class="ident">nil</span>(),
-            <span class="ident">OffsetRows</span>::<span class="ident">Row</span> <span class="op">=&gt;</span> <span class="ident">RcDoc</span>::<span class="ident">text</span>(<span class="string">&quot; row&quot;</span>),
-            <span class="ident">OffsetRows</span>::<span class="ident">Rows</span> <span class="op">=&gt;</span> <span class="ident">RcDoc</span>::<span class="ident">text</span>(<span class="string">&quot; rows&quot;</span>),
+            <span class="ident">OffsetRows</span>::<span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">RcDoc</span>::<span class="ident">nil</span>(),
+            <span class="ident">OffsetRows</span>::<span class="ident">Row</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">RcDoc</span>::<span class="ident">text</span>(<span class="string">&quot; row&quot;</span>),
+            <span class="ident">OffsetRows</span>::<span class="ident">Rows</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">RcDoc</span>::<span class="ident">text</span>(<span class="string">&quot; rows&quot;</span>),
         }))
     } <span class="kw">else</span> {
         <span class="ident">RcDoc</span>::<span class="ident">nil</span>()
     }
 }
 
-<span class="kw">fn</span> <span class="ident">fetch_doc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">fetch</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Fetch</span><span class="op">&gt;</span>) <span class="op">-&gt;</span> <span class="ident">FormaDoc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">fetch_doc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">fetch</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Fetch</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">FormaDoc</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">Fetch</span> {
         <span class="ident">with_ties</span>,
         <span class="ident">percent</span>,

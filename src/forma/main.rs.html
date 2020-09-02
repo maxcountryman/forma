@@ -157,7 +157,7 @@
 
 <span class="doccomment">/// Given a reader, a writer, a check bool, and max width to format to, formats the reader&#39;s string</span>
 <span class="doccomment">/// value and then writes the result via the writer.</span>
-<span class="kw">fn</span> <span class="ident">formatter</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">W</span><span class="op">&gt;</span>(<span class="kw-2">mut</span> <span class="ident">reader</span>: <span class="ident">R</span>, <span class="kw-2">mut</span> <span class="ident">writer</span>: <span class="ident">W</span>, <span class="ident">check</span>: <span class="ident">bool</span>, <span class="ident">max_width</span>: <span class="ident">usize</span>) <span class="op">-&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>
+<span class="kw">fn</span> <span class="ident">formatter</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">W</span><span class="op">&gt;</span>(<span class="kw-2">mut</span> <span class="ident">reader</span>: <span class="ident">R</span>, <span class="kw-2">mut</span> <span class="ident">writer</span>: <span class="ident">W</span>, <span class="ident">check</span>: <span class="ident">bool</span>, <span class="ident">max_width</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">W</span>: <span class="ident">Write</span>,
     <span class="ident">R</span>: <span class="ident">BufRead</span>,
@@ -169,26 +169,26 @@
         <span class="kw-2">&amp;</span><span class="ident">formatted</span>
             .<span class="ident">iter</span>()
             .<span class="ident">flat_map</span>(<span class="op">|</span><span class="ident">ps</span><span class="op">|</span> <span class="ident">ps</span>.<span class="ident">as_bytes</span>().<span class="ident">to_owned</span>())
-            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;&gt;</span>()[..],
+            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span>()[..],
     )<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Main entrypoint for the `forma` binary.</span>
-<span class="kw">fn</span> <span class="ident">main</span>() <span class="op">-&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">main</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">Opt</span> {
         <span class="ident">input</span>,
         <span class="ident">check</span>,
         <span class="ident">max_width</span>,
     } <span class="op">=</span> <span class="ident">Opt</span>::<span class="ident">from_args</span>();
     <span class="kw">match</span> <span class="ident">input</span> {
-        <span class="prelude-val">Some</span>(<span class="ident">input</span>) <span class="op">=&gt;</span> <span class="ident">formatter</span>(
+        <span class="prelude-val">Some</span>(<span class="ident">input</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">formatter</span>(
             <span class="ident">BufReader</span>::<span class="ident">new</span>(<span class="ident">fs</span>::<span class="ident">File</span>::<span class="ident">open</span>(<span class="kw-2">&amp;</span><span class="ident">input</span>)<span class="question-mark">?</span>),
             <span class="ident">fs</span>::<span class="ident">File</span>::<span class="ident">with_options</span>().<span class="ident">write</span>(<span class="bool-val">true</span>).<span class="ident">open</span>(<span class="ident">input</span>)<span class="question-mark">?</span>,
             <span class="ident">check</span>,
             <span class="ident">max_width</span>,
         ),
-        <span class="prelude-val">None</span> <span class="op">=&gt;</span> <span class="ident">formatter</span>(<span class="ident">io</span>::<span class="ident">stdin</span>().<span class="ident">lock</span>(), <span class="ident">io</span>::<span class="ident">stdout</span>(), <span class="ident">check</span>, <span class="ident">max_width</span>),
+        <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">formatter</span>(<span class="ident">io</span>::<span class="ident">stdin</span>().<span class="ident">lock</span>(), <span class="ident">io</span>::<span class="ident">stdout</span>(), <span class="ident">check</span>, <span class="ident">max_width</span>),
     }
 }
 
@@ -199,7 +199,7 @@
     <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_formatter</span>() <span class="op">-&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">test_formatter</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="string">b&quot;SELECT * FROM t1&quot;</span>;
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">new</span>();
         <span class="ident">formatter</span>(<span class="kw-2">&amp;</span><span class="ident">input</span>[..], <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">output</span>, <span class="bool-val">false</span>, <span class="number">100</span>)<span class="question-mark">?</span>;
