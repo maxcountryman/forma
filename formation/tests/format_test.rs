@@ -1,5 +1,3 @@
-extern crate formation;
-
 use std::fs;
 use std::iter::FromIterator;
 

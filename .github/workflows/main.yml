@@ -1,6 +1,6 @@
 name: Main
 
-on: [push, pull_request]
+on: push
 
 jobs:
   codestyle:
@@ -23,7 +23,7 @@ jobs:
           rust-version: nightly
           components: clippy
       - uses: actions/checkout@v2
-      - run: cargo clippy --all-targets --all-features -- -D clippy::all
+      - run: cargo clippy --all --all-targets -- -Dwarnings -Drust-2018-idioms
 
   compile:
     runs-on: ubuntu-latest
