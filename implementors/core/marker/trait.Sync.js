@@ -1,4 +1,4 @@
 (function() {var implementors = {};
-implementors["forma"] = [{"text":"impl Sync for Opt","synthetic":true,"types":[]}];
-implementors["formation"] = [{"text":"impl Sync for FormaError","synthetic":true,"types":[]}];
+implementors["forma"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html\" title=\"trait core::marker::Sync\">Sync</a> for <a class=\"struct\" href=\"forma/struct.Opt.html\" title=\"struct forma::Opt\">Opt</a>","synthetic":true,"types":["forma::Opt"]}];
+implementors["formation"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html\" title=\"trait core::marker::Sync\">Sync</a> for <a class=\"enum\" href=\"formation/error/enum.FormaError.html\" title=\"enum formation::error::FormaError\">FormaError</a>","synthetic":true,"types":["formation::error::FormaError"]}];
 if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
