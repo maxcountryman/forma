@@ -16,5 +16,5 @@ structopt = "0.3.21"
 anyhow = "1.0.39"
 
 [dev-dependencies]
-assert_cmd = "1.0.1"
+assert_cmd = "1.0.2"
 tempfile = "3.1.0"
