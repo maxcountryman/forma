@@ -5,8 +5,8 @@ pub struct TemplatedDialect {}
 
 impl Dialect for TemplatedDialect {
     fn is_identifier_start(&self, ch: char) -> bool {
-        (ch >= 'a' && ch <= 'z')
-            || (ch >= 'A' && ch <= 'Z')
+        ('a'..='z').contains(&ch)
+            || ('A'..='Z').contains(&ch)
             || ch == '_'
             || ch == '#'
             || ch == '@'
@@ -14,9 +14,9 @@ impl Dialect for TemplatedDialect {
     }
 
     fn is_identifier_part(&self, ch: char) -> bool {
-        (ch >= 'a' && ch <= 'z')
-            || (ch >= 'A' && ch <= 'Z')
-            || (ch >= '0' && ch <= '9')
+        ('a'..='z').contains(&ch)
+            || ('A'..='Z').contains(&ch)
+            || ('0'..='9').contains(&ch)
             || ch == '@'
             || ch == '$'
             || ch == '#'
